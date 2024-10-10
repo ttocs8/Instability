@@ -7,6 +7,7 @@
 #include <fstream>
 #include "GlobalHelpers.hpp"
 #include <direct.h>
+#include <map> 
 
 class Game {
 
@@ -19,7 +20,7 @@ public:
 	void Update();
 	void Render();
 	void Reset();
-	void SaveState(std::string theStateName);
+	void CreateInitialSaveSate();
 	void SetCurrentSceneName(std::string theSceneName);
 	std::string GetCurrentSceneName() { return m_CurrentSceneName; };
 	void Clean();
