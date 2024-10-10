@@ -17,3 +17,8 @@ std::string GlobalHelpers::GetOSSeparator()
 	}
 	return SEPARATOR_WIN;
 }
+
+bool GlobalHelpers::FileExists(const std::string& Filename)
+{
+	return access(Filename.c_str(), 0) == 0;
+}

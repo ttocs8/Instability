@@ -1,5 +1,11 @@
 #include <SDL_platform.h>
 #include <string>
+#ifdef _WIN32
+#include <io.h> 
+#define access    _access_s
+#else
+#include <unistd.h>
+#endif
 
 //Game Management Constants
 #define ASSETS_FOLDER "Assets"
@@ -25,5 +31,6 @@
 class GlobalHelpers {
 public:
 	static std::string GetOSSeparator();
+	static bool FileExists(const std::string& Filename);
 	
 };

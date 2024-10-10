@@ -12,7 +12,7 @@ Sprite tempQuitButton;
 Sprite tempOptionsButton;
 SDL_Rect* playrect;
 string g_SaveStatesFolder;
-
+int w, h;
 
 Game::Game() {
 	m_GameDataFolder = SDL_GetPrefPath(ORG_NAME, APP_NAME);
@@ -83,91 +83,129 @@ int Game::init(
 	int width, 
 	int height, 
 	bool isFullscreen
-		)
-		{
-			int flags = 0;
-			if (isFullscreen)
-			{
-				flags = SDL_WINDOW_FULLSCREEN;
-			}
+)
+{
+	/*Create / Verify game file directories
+	*
+	*
+	*Directory will be as follows:
+	*	C:\Users\USER\AppData\Roaming\Perpetual Motion Software\Instability\SaveStates
+	*	...
+	*/
+	cout << "Initializing game data folders..." << endl;
+	if (_mkdir(g_SaveStatesFolder.c_str()) == 0) {
+		cout << "\t>> Created \"" << g_SaveStatesFolder << "\" folder for the first time" << endl;
+	}
+	else {
+		//failed to create direcotry (could already be created, which is fine)
+		// IGNORE FOR NOW //
+	}
 
-			if (SDL_Init(SDL_INIT_EVERYTHING) == 0)
+	string firstTimeInitFilePath = g_SaveStatesFolder + GlobalHelpers::GetOSSeparator() + "INIT" + ".init";
+	bool isFirstTimeInit = !GlobalHelpers::FileExists(firstTimeInitFilePath.c_str());
+
+
+
+	struct stat info;
+	//Assert created folders are Directories and is accessible
+	SDL_assert(stat(m_GameDataFolder.c_str(), &info) == 0);
+	SDL_assert(info.st_mode & S_IFDIR);
+
+	SDL_assert(stat(g_SaveStatesFolder.c_str(), &info) == 0);
+	SDL_assert(info.st_mode & S_IFDIR);
+
+		
+	int flags = 0;
+	if (isFullscreen)
+	{
+		flags = SDL_WINDOW_FULLSCREEN;
+	}
+
+	if (SDL_Init(SDL_INIT_EVERYTHING) == 0)
+	{
+		w = width;
+		h = height;
+		if (width == -1 || height == -1) {
+			if (isFirstTimeInit)
 			{
+				w = 800;
+				h = 600;
+			}
+			else {
 				//Read in settings from file
 				map< string, map<string, vector<string> > > TheSettingsFileMap;
 				LoadFromSaveState(TheSettingsFileMap);
 
-				m_mainWindow = SDL_CreateWindow(title, xpos, ypos, width, height, flags);
-				//SDL_SetWindowResizable(m_mainWindow,SDL_TRUE);
-				if (m_mainWindow)
-				{
-					cout << "Window created." << endl;
+				for (map< string, map<string, vector<string> > >::iterator iter1 = TheSettingsFileMap.begin(); iter1 != TheSettingsFileMap.end(); iter1++) {
+
+					auto& settingName = (*iter1).first;
+					if (settingName.find("RES") != string::npos) {
+						map<string, vector<string> >::iterator iter2((*iter1).second.begin());
+						for (map<string, vector<string> >::iterator iter2 = (*iter1).second.begin(); iter2 != (*iter1).second.end(); iter2++) {
+							auto& settingName = (*iter2).first;
+							auto& data = (*iter2).second;
+							w = stoi(data.at(0));
+							h = stoi(data.at(1));
+						}
+					}
 				}
-
-				m_Renderer = SDL_CreateRenderer(m_mainWindow, -1, 0);
-				if (m_Renderer)
-				{
-					SDL_SetRenderDrawColor(m_Renderer, 255, 255, 255, 255);
-					cout << "Renderer created." << endl;
-				}
-
-				isRunning = true;
 			}
-			else
-			{
-				isRunning = false;
-			}
+		}
+		
+		m_mainWindow = SDL_CreateWindow(title, xpos, ypos, w, h, flags);
+		//SDL_SetWindowResizable(m_mainWindow,SDL_TRUE);
+		if (m_mainWindow)
+		{
+			cout << "Window created." << endl;
+		}
 
-			/*Create / Verify game file directories
-			*
-			*
-			*Directory will be as follows:
-			*	C:\Users\USER\AppData\Roaming\Perpetual Motion Software\Instability\SaveStates
-			*	...
-			*/
-			cout << "Initializing game data folders..." << endl;
-			if (_mkdir(g_SaveStatesFolder.c_str()) == 0) {
-				cout << "\t>> Created \"" << g_SaveStatesFolder << "\" folder for the first time" << endl;
-			}
-			else {
-				//failed to create direcotry (could already be created, which is fine)
-				// IGNORE FOR NOW //
-			}
+		m_Renderer = SDL_CreateRenderer(m_mainWindow, -1, 0);
+		if (m_Renderer)
+		{
+			SDL_SetRenderDrawColor(m_Renderer, 255, 255, 255, 255);
+			cout << "Renderer created." << endl;
+		}
 
-			struct stat info;
-			//Assert created folders are Directories and is accessible
-			SDL_assert(stat(m_GameDataFolder.c_str(), &info) == 0);
-			SDL_assert(info.st_mode& S_IFDIR);
+		isRunning = true;
+	}
+	else
+	{
+		isRunning = false;
+	}
 
-			SDL_assert(stat(g_SaveStatesFolder.c_str(), &info) == 0);
-			SDL_assert(info.st_mode& S_IFDIR);
+		
+	//Create Main Menu sprites
+	Menu.AddSpritesToList({ &bg, &tempPlayButton, &tempQuitButton, &tempOptionsButton });
 
-			//Create Main Menu sprites
-			Menu.AddSpritesToList({ &bg, &tempPlayButton, &tempQuitButton, &tempOptionsButton });
+	bg.setTexture(m_Renderer, "Assets/pixelArt.png");
+	bg.setDimenstions(800, 600);
+	bg.setSpriteName("BG_BACKGROUND");
 
-			bg.setTexture(m_Renderer, "Assets/pixelArt.png");
-			bg.setDimenstions(800, 600);
-			bg.setSpriteName("BG_BACKGROUND");
+	tempPlayButton.setTexture(m_Renderer, "Assets/tempplay.png");
+	tempPlayButton.setDimenstions(150, 75);
+	tempPlayButton.setPosition(200, 200);
+	tempPlayButton.setSpriteName("BT_PlayButton");
 
-			tempPlayButton.setTexture(m_Renderer, "Assets/tempplay.png");
-			tempPlayButton.setDimenstions(150, 75);
-			tempPlayButton.setPosition(200, 200);
-			tempPlayButton.setSpriteName("BT_PlayButton");
+	tempQuitButton.setTexture(m_Renderer, "Assets/tempquit.png");
+	tempQuitButton.setDimenstions(150, 75);
+	tempQuitButton.setPosition(500, 200);
+	tempQuitButton.setSpriteName("BT_QuitButton");
 
-			tempQuitButton.setTexture(m_Renderer, "Assets/tempquit.png");
-			tempQuitButton.setDimenstions(150, 75);
-			tempQuitButton.setPosition(500, 200);
-			tempQuitButton.setSpriteName("BT_QuitButton");
+	tempOptionsButton.setTexture(m_Renderer, "Assets/tempoptions.png");
+	tempOptionsButton.setDimenstions(150, 75);
+	tempOptionsButton.setPosition(350, 400);
+	tempOptionsButton.setSpriteName("BT_OptionsButton");
 
-			tempOptionsButton.setTexture(m_Renderer, "Assets/tempoptions.png");
-			tempOptionsButton.setDimenstions(150, 75);
-			tempOptionsButton.setPosition(350, 400);
-			tempOptionsButton.setSpriteName("BT_OptionsButton");
+	SetCurrentSceneName(SCENE_PREFIX "MainMenu");
 
-			SetCurrentSceneName(SCENE_PREFIX "MainMenu");
-			CreateInitialSaveSate();
+	if (isFirstTimeInit) {
+		ofstream ftInitFile;
+		ftInitFile.open(firstTimeInitFilePath);
+		ftInitFile.close();
+		CreateInitialSaveSate();
+	}
 
-			return 0;
+	return 0;
 }
 
 vector<Sprite*> Game::GetAllSprites(GUI& theGUI /*, Enemys enemyObjecsts, etc*/)
@@ -276,6 +314,9 @@ void Game::Reset() {
 				iterIndex++;
 			}
 		}
+		else {
+			
+		}
 	}
 }
 
@@ -283,34 +324,36 @@ void Game::CreateInitialSaveSate() {
 
 	string fileName = INITIAL_SAVE_STATE_FILE;
 	string filePath = g_SaveStatesFolder + GlobalHelpers::GetOSSeparator() + fileName + ".config";
+	
 
-	ofstream tempFile;
-	tempFile.open(filePath, ios::out);
+		ofstream tempFile;
+		tempFile.open(filePath, ios::out);
 
-	if (tempFile.is_open())
-	{
-		//Screen Resolution
-		tempFile << "SS_RES\n";
-		tempFile << "RESOLUTION,1280,720\n";
-
-		//Main Menu Sprites
-		tempFile << "SS_SPRITES\n";
-		vector<Sprite*> menuSprites = Menu.GetSpriteList();
-		for (int i = 0; i < menuSprites.size(); i++)
+		if (tempFile.is_open())
 		{
-			Sprite currentSprite = *menuSprites.at(i);
-			SDL_Rect spriteRect = *menuSprites.at(i)->getRect();
-			string spriteName = menuSprites.at(i)->getSpriteName();
+			//Screen Resolution
+			tempFile << "SS_RES\n";
+			tempFile << "RESOLUTION," << w << "," << h << ",\n";
 
-			tempFile << spriteName << "," << spriteRect.x << "," << spriteRect.y << "," << spriteRect.w << "," << spriteRect.h << "," << currentSprite.getTextureSource() << ",\n";
+			//Main Menu Sprites
+			tempFile << "SS_SPRITES\n";
+			vector<Sprite*> menuSprites = Menu.GetSpriteList();
+			for (int i = 0; i < menuSprites.size(); i++)
+			{
+				Sprite currentSprite = *menuSprites.at(i);
+				SDL_Rect spriteRect = *menuSprites.at(i)->getRect();
+				string spriteName = menuSprites.at(i)->getSpriteName();
+
+				tempFile << spriteName << "," << spriteRect.x << "," << spriteRect.y << "," << spriteRect.w << "," << spriteRect.h << "," << currentSprite.getTextureSource() << ",\n";
+			}
+
+			tempFile.close();
 		}
-
-		tempFile.close();
-	}
-	else
-	{
-		cout << "Could not open save file for writing";
-	}
+		else
+		{
+			cout << "Could not open save file for writing";
+		}
+	
 }
 
 void Game::Clean(){
