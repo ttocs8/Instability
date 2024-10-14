@@ -262,10 +262,10 @@ void Game::ClickOnSprite(SDL_Event& theEvent, vector<Sprite*> theClickableSprite
 
 				//Destroy All Menu Sprites
 				vector<Sprite*> allMenuSprites = GetAllSprites(Menu);
-				for (Sprite* menuSprite : allMenuSprites) {
+				for (Sprite* menuSprite : allMenuSprites) 
 					if(menuSprite->getSpriteName().find(BACKGROUND_PREFIX) == string::npos)
 						menuSprite->Destroy();
-				}
+				
 
 				//Change Scene
 				SetCurrentSceneName(SCENE_PREFIX "Options");
@@ -279,6 +279,38 @@ void Game::ClickOnSprite(SDL_Event& theEvent, vector<Sprite*> theClickableSprite
 			else if (spriteToCheck->getSpriteName().find(BUTTON_PREFIX "QuitButton") != string::npos) {
 				cout << "Clicked on Quit button" << endl;
 				IS_RUNNING_MAIN = false;
+			}
+		}
+	}
+}
+
+void Game::HoverOverSprite(SDL_Event& theEvent, vector<Sprite*> theHoverableSprites) {
+	SDL_Point mousePosition;
+
+	mousePosition.x = theEvent.motion.x;
+	mousePosition.y = theEvent.motion.y;
+
+	for (Sprite* spriteToCheck : theHoverableSprites) {
+
+		if (spriteToCheck->getSpriteName().find(BUTTON_PREFIX "PlayButton") != string::npos) {
+			//Hovering over Play Button
+			if (SDL_PointInRect(&mousePosition, spriteToCheck->getRect())) {
+				spriteToCheck->setTexture(m_Renderer, "Assets/tempplay_hover.png");
+			}
+			else //NOT hovering over Play Button
+			{			
+				spriteToCheck->setTexture(m_Renderer, "Assets/tempplay.png");
+			}
+		}
+
+		if (spriteToCheck->getSpriteName().find(BUTTON_PREFIX "QuitButton") != string::npos) {
+			//Hovering over Quit Button
+			if (SDL_PointInRect(&mousePosition, spriteToCheck->getRect())) {
+				spriteToCheck->setTexture(m_Renderer, "Assets/tempquit_hover.png");
+			}
+			else //NOT hovering over Quit Button
+			{
+				spriteToCheck->setTexture(m_Renderer, "Assets/tempquit.png");
 			}
 		}
 	}
@@ -309,7 +341,9 @@ void Game::HandleEvents() {
 		case SDL_MOUSEBUTTONDOWN:
 			ClickOnSprite(event, Menu.GetSpriteList());
 			break;
-
+		case SDL_MOUSEMOTION:
+			HoverOverSprite(event, Menu.GetSpriteList());
+			break;
 		default:
 			break;//event type
 	}
@@ -362,9 +396,6 @@ void Game::Reset() {
 				menuSprites.at(iterIndex)->setTexture(m_Renderer, data.at(4).c_str());
 				iterIndex++;
 			}
-		}
-		else {
-			
 		}
 	}
 }

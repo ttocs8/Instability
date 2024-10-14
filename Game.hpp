@@ -50,5 +50,6 @@ private:
 	void SetResolution(int w, int h);
 	ScreenResolution_t GetCurrentResolution() { return m_CurrentScreenResolution; };
 	void ClickOnSprite(SDL_Event& theEvent, vector<Sprite*> theClickableSprites);
+	void HoverOverSprite(SDL_Event& theEvent, vector<Sprite*> theHoverableSprites);
 
 };
