@@ -202,7 +202,7 @@ int Game::init(
 	Menu.AddSpritesToList({ &bg, &titleCard, &tempPlayButton, &tempQuitButton, &tempOptionsButton });
 	
 	bg.Create(m_Renderer, "Assets/menubackground3.png", w, h, 0, 0,"BG_BACKGROUND");
-	titleCard.Create(m_Renderer, "Assets/titlecard.png", 500, 200, GetCurrentResolution().W / 2, GetCurrentResolution().H / 2,"BG_TitleCard",true,0,-100);
+	titleCard.Create(m_Renderer, "Assets/titlecard.png", 500, 200, GetCurrentResolution().W / 2, GetCurrentResolution().H / 2,"TitleCard",true,0,-100);
 	tempPlayButton.Create(m_Renderer, "Assets/tempplay.png", 150, 75, GetCurrentResolution().W / 2, GetCurrentResolution().H / 2, "BT_PlayButton", true, 0 ,25);
 	tempQuitButton.Create(m_Renderer, "Assets/tempquit.png", 150, 75, GetCurrentResolution().W / 2, GetCurrentResolution().H / 2, "BT_QuitButton", true, 0, 125);
 	tempOptionsButton.Create(m_Renderer, "Assets/tempoptions.png", 50, 50, GetCurrentResolution().W - 75, 25,"BT_OptionsButton");
@@ -246,8 +246,8 @@ void Game::ClickOnSprite(SDL_Event& theEvent, vector<Sprite*> theClickableSprite
 
 				//Destroy All Menu Sprites
 				vector<Sprite*> allMenuSprites = GetAllSprites(Menu);
-				for (int i = 0; i < allMenuSprites.size(); i++)
-					allMenuSprites.at(i)->Destroy();
+				for (Sprite* menuSprite : allMenuSprites)
+					menuSprite->Destroy();
 
 				//Change Scene
 				SetCurrentSceneName(SCENE_PREFIX "Game");
@@ -262,8 +262,10 @@ void Game::ClickOnSprite(SDL_Event& theEvent, vector<Sprite*> theClickableSprite
 
 				//Destroy All Menu Sprites
 				vector<Sprite*> allMenuSprites = GetAllSprites(Menu);
-				for (int i = 0; i < allMenuSprites.size(); i++)
-					allMenuSprites.at(i)->Destroy();
+				for (Sprite* menuSprite : allMenuSprites) {
+					if(menuSprite->getSpriteName().find(BACKGROUND_PREFIX) == string::npos)
+						menuSprite->Destroy();
+				}
 
 				//Change Scene
 				SetCurrentSceneName(SCENE_PREFIX "Options");
