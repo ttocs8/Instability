@@ -7,6 +7,19 @@ Sprite::Sprite()
 
 Sprite::~Sprite(){}
 
+void Sprite::Create(SDL_Renderer* theRenderer, const char* theFullPathToImage, int w, int h, int x, int y, const char* theName, bool isScreenCentered, int xOffset, int yOffset) {
+	setTexture(theRenderer, theFullPathToImage);
+	setDimenstions(w, h);
+	if (isScreenCentered) {
+		int centerX = x - ( w / 2 );
+		int centerY = y - ( h / 2 );
+		setPosition( centerX + xOffset, centerY + yOffset );
+	}
+	else
+		setPosition(x, y);
+	setSpriteName(theName);
+}
+
 void Sprite::setTexture(SDL_Renderer* theRenderer, const char* theFullPathToImage ) {
 	m_SpriteTextureSource = theFullPathToImage;
 	SDL_Surface* tempSurface = IMG_Load(theFullPathToImage);
@@ -48,9 +61,9 @@ SDL_Rect* Sprite::getRect() {
 }
 
 void Sprite::Destroy() {
-	SDL_DestroyTexture(m_Texture);
 	//LOOK AT THIS LATER FUCKO
 	//FIND A WAY TO ACTUALLY DELETE THIS FUCKER
+	SDL_DestroyTexture(m_Texture);
 	setDimenstions(0, 0);
 }
 

@@ -8,6 +8,7 @@ public:
 	Sprite();
 	~Sprite();
 
+	void Create(SDL_Renderer* theRenderer, const char* theFullPathToImage, int w, int h, int x, int y, const char* theName, bool isScreenCentered = false, int xOffset = 0, int yOffset = 0);
 	void setTexture(SDL_Renderer* theRenderer, const char* theFullPathToImage);
 	void setDimenstions(int w, int h);
 	void setPosition(int x, int y);

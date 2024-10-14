@@ -9,6 +9,12 @@
 #include <direct.h>
 #include <map> 
 
+using namespace std;
+
+struct ScreenResolution_t {
+	int W = DEFAULT_RESOLUTION_W;
+	int H = DEFAULT_RESOLUTION_H;
+};
 
 class Game {
 
@@ -22,22 +28,27 @@ public:
 	void Render();
 	void Reset();
 	void CreateInitialSaveSate();
-	void SetCurrentSceneName(std::string theSceneName);
-	std::string GetCurrentSceneName() { return m_CurrentSceneName; };
+	void SetCurrentSceneName(string theSceneName);
+	string GetCurrentSceneName() { return m_CurrentSceneName; };
 	void Clean();
-	std::vector<Sprite*> GetAllSprites(GUI& theGUI);
+	vector<Sprite*> GetAllSprites(GUI& theGUI);
 
-	bool IsRunning() { return isRunning; };
+
+	bool IsRunning() { return IS_RUNNING_MAIN; };
 
 	~Game();
 
 private:
 	int count = 0;
-	bool isRunning = false;
+	bool IS_RUNNING_MAIN = false;
 	SDL_Window *m_mainWindow = NULL;
 	SDL_Renderer* m_Renderer = NULL;
-	std::string m_GameDataFolder = "";
-	std::string m_CurrentSceneName = "";
-	void ClickOnSprite(SDL_Event& theEvent, Sprite* theSprite);
+	string m_GameDataFolder = "";
+	string m_CurrentSceneName = "";
+	ScreenResolution_t m_CurrentScreenResolution;
+
+	void SetResolution(int w, int h);
+	ScreenResolution_t GetCurrentResolution() { return m_CurrentScreenResolution; };
+	void ClickOnSprite(SDL_Event& theEvent, vector<Sprite*> theClickableSprites);
 
 };
