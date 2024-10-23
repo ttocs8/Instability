@@ -8,7 +8,8 @@ Sprite::Sprite()
 Sprite::~Sprite(){}
 
 void Sprite::Create(SDL_Renderer* theRenderer, const char* theFullPathToImage, int w, int h, int x, int y, const char* theName, bool isScreenCentered, int xOffset, int yOffset) {
-	setTexture(theRenderer, theFullPathToImage);
+	if(theFullPathToImage != NULL)
+		setTexture(theRenderer, theFullPathToImage);
 	setDimenstions(w, h);
 	if (isScreenCentered) {
 		int centerX = x - ( w / 2 );
@@ -17,7 +18,9 @@ void Sprite::Create(SDL_Renderer* theRenderer, const char* theFullPathToImage, i
 	}
 	else
 		setPosition(x, y);
+
 	setSpriteName(theName);
+	m_IsEnabled = true;
 }
 
 void Sprite::setTexture(SDL_Renderer* theRenderer, const char* theFullPathToImage ) {
@@ -26,20 +29,31 @@ void Sprite::setTexture(SDL_Renderer* theRenderer, const char* theFullPathToImag
 	m_Texture = SDL_CreateTextureFromSurface(theRenderer, tempSurface);
 	SDL_FreeSurface(tempSurface);
 }
+
+void Sprite::setTexture(SDL_Texture* theTexture) {
+	m_Texture = theTexture;
+}
+
 void Sprite::setDimenstions(int theWidth, int theHeight) {
-	SDL_assert(m_Texture != NULL);
+	//SDL_assert(m_Texture != NULL);
 	m_Rect->w = theWidth;
 	m_Rect->h = theHeight;
 }
 
 void Sprite::setPosition(int theXPos, int theYPos) {
-	SDL_assert(m_Texture != NULL);
+	//SDL_assert(m_Texture != NULL);
 	m_Rect->x = theXPos;
 	m_Rect->y = theYPos;
 }
 
 void Sprite::setSpriteName(const char* theName) {
 	m_SpriteName = theName;
+}
+
+void Sprite::setText(SDL_Renderer* theRenderer, TTF_Font* theFont, SDL_Color theColor, string theMessage) {
+	SDL_Surface* tempSurface = TTF_RenderText_Solid(theFont, theMessage.c_str(), theColor);
+	m_Texture = SDL_CreateTextureFromSurface(theRenderer, tempSurface);
+	SDL_FreeSurface(tempSurface);
 }
 
 void Sprite::SaveSprite() {
@@ -63,8 +77,10 @@ SDL_Rect* Sprite::getRect() {
 void Sprite::Destroy() {
 	//LOOK AT THIS LATER FUCKO
 	//FIND A WAY TO ACTUALLY DELETE THIS FUCKER
+	m_IsEnabled = false;
 	SDL_DestroyTexture(m_Texture);
 	setDimenstions(0, 0);
+	SDL_free(&m_Rect);
 }
 
 

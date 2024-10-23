@@ -1,0 +1,23 @@
+﻿  Game.cpp
+C:\Users\hunts\Desktop\C++ Game\Instability++\Instability\Sprite.hpp(36,27): warning C4552: '>': result of expression not used
+  (compiling source file 'Game.cpp')
+  
+C:\Users\hunts\Desktop\C++ Game\Instability++\Instability\Game.cpp(425,8): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
+  GlobalHelpers.cpp
+  Scene.cpp
+C:\Users\hunts\Desktop\C++ Game\Instability++\Instability\Sprite.hpp(36,27): warning C4552: '>': result of expression not used
+  (compiling source file 'Scene.cpp')
+  
+  main.cpp
+C:\Users\hunts\Desktop\C++ Game\Instability++\Instability\Sprite.hpp(36,27): warning C4552: '>': result of expression not used
+  (compiling source file 'main.cpp')
+  
+  Sprite.cpp
+C:\Users\hunts\Desktop\C++ Game\Instability++\Instability\Sprite.hpp(36,27): warning C4552: '>': result of expression not used
+  (compiling source file 'Sprite.cpp')
+  
+  Generating code
+  Previous IPDB not found, fall back to full compilation.
+  All 695 functions were compiled because no usable IPDB/IOBJ from previous compilation was found.
+  Finished generating code
+  Instability++.vcxproj -> C:\Users\hunts\Desktop\C++ Game\Instability++\Instability\x64\Release\Instability++.exe

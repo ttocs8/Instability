@@ -2,19 +2,27 @@
 //Diable fopen warnings
 #pragma warning(disable:4996)
 
-using namespace std;
+//using namespace std;
 
 
-GUI Menu;
-Sprite bg;
+Scene sc_MainMenu;
+Sprite bg1;
 Sprite titleCard;
 
 Sprite tempPlayButton;
 Sprite tempQuitButton;
 Sprite tempOptionsButton;
+Sprite tempOptionsButton2;
 
-GUI OptionsMenu;
-Sprite tempResolutionButton;
+Scene sc_OptionsMenu;
+Sprite bg2;
+Sprite screenResolutionOptionsText;
+Sprite tempResolutionButton2;
+Sprite tempResolutionButton3;
+
+Scene sc_GameplayScene;
+
+TTF_Font* g_Font;
 
 string g_SaveStatesFolder;
 map< string, map<string, vector<string> > > g_SettingsFileMap;
@@ -27,9 +35,7 @@ Game::Game() {
 }
 
 Game::~Game() {}
-void Game::SetCurrentSceneName(string theSceneName) {
-	m_CurrentSceneName = theSceneName;
-}
+
 
 //VERY MESSY, MAY NEED TO REFACTOR
 void LoadSettingsFromConfig(map< string, map<string, vector<string> > >& TheSettingsFileMap) {
@@ -197,17 +203,38 @@ int Game::init(
 		IS_RUNNING_MAIN = false;
 	}
 
-		
-	//Create Main Menu sprites
-	Menu.AddSpritesToList({ &bg, &titleCard, &tempPlayButton, &tempQuitButton, &tempOptionsButton });
-	
-	bg.Create(m_Renderer, "Assets/menubackground3.png", w, h, 0, 0,"BG_BACKGROUND");
-	titleCard.Create(m_Renderer, "Assets/titlecard.png", 500, 200, GetCurrentResolution().W / 2, GetCurrentResolution().H / 2,"TitleCard",true,0,-100);
-	tempPlayButton.Create(m_Renderer, "Assets/tempplay.png", 150, 75, GetCurrentResolution().W / 2, GetCurrentResolution().H / 2, "BT_PlayButton", true, 0 ,25);
-	tempQuitButton.Create(m_Renderer, "Assets/tempquit.png", 150, 75, GetCurrentResolution().W / 2, GetCurrentResolution().H / 2, "BT_QuitButton", true, 0, 125);
-	tempOptionsButton.Create(m_Renderer, "Assets/tempoptions.png", 50, 50, GetCurrentResolution().W - 75, 25,"BT_OptionsButton");
+	//Load font library 
+	//	ALWAYS init this AFTER SDL2 libs
+	TTF_Init();
 
-	SetCurrentSceneName(SCENE_PREFIX "MainMenu");
+	//Create Main Menu sprites
+	bg1.Create(m_Renderer, "Assets/menubackground3.png", w, h, 0, 0, "BG_BACKGROUND");
+	titleCard.Create(m_Renderer, "Assets/titlecard.png", 500, 200, GetCurrentResolution().W / 2, GetCurrentResolution().H / 2, "TitleCard", true, 0, -100);
+	tempPlayButton.Create(m_Renderer, "Assets/tempplay.png", 150, 75, GetCurrentResolution().W / 2, GetCurrentResolution().H / 2, "BT_PlayButton", true, 0, 25);
+	tempQuitButton.Create(m_Renderer, "Assets/tempquit.png", 150, 75, GetCurrentResolution().W / 2, GetCurrentResolution().H / 2, "BT_QuitButton", true, 0, 125);
+	tempOptionsButton.Create(m_Renderer, "Assets/tempoptions.png", 50, 50, GetCurrentResolution().W - 75, 25, "BT_OptionsCogwheel");
+	sc_MainMenu.AddSpritesToList({ &bg1, &titleCard, &tempPlayButton, &tempQuitButton, &tempOptionsButton });
+	sc_MainMenu.SetName(SCENE_PREFIX "MainMenu");
+
+
+	//Create Options Menu Sprites
+	bg2.Create(m_Renderer, "Assets/menubackground3.png", w, h, 0, 0, "BG_BACKGROUND2");
+	tempOptionsButton2.Create(m_Renderer, "Assets/tempoptions2.png", 50, 50, GetCurrentResolution().W - 75, 25, "BT_ExitOptns");
+
+	sc_OptionsMenu.SetName(SCENE_PREFIX "OptionsMenu");
+	sc_OptionsMenu.AddSpriteToList(&tempOptionsButton2);
+	sc_OptionsMenu.AddSpriteToList(&bg2);
+
+	g_Font = TTF_OpenFont("Assets/Stifly.ttf", 24);
+	screenResolutionOptionsText.Create(m_Renderer, NULL, 300, 50, 0, 0, "TXT_ScreenResolution");
+	screenResolutionOptionsText.setText(m_Renderer, g_Font, FONT_COLOR_WHITE, "Screen Resolution");
+	sc_OptionsMenu.AddSpriteToList(&screenResolutionOptionsText);
+
+	//Create Gameplay Sprites
+	sc_GameplayScene.SetName(SCENE_PREFIX "INSTABILITY");
+
+	m_CurrentScene = sc_MainMenu;				
+
 
 	if (isFirstTimeInit) 
 		CreateInitialSaveSate();
@@ -219,9 +246,31 @@ int Game::init(
 	return 0;
 }
 
-vector<Sprite*> Game::GetAllSprites(GUI& theGUI /*, Enemys enemyObjecsts, etc*/)
-{
-	return theGUI.GetSpriteList();
+
+void Game::GoToNextScene(string theButtonClicked) {
+
+	m_CurrentScene.DisableAllSprites();
+	string currentSceneName = m_CurrentScene.GetName();
+
+	//MainMenu --> OptionsMenu
+	//    or
+	//MainMenu --> Gameplay
+	if (currentSceneName.find(SCENE_PREFIX "MainMenu") != string::npos){
+		if (theButtonClicked.find(BUTTON_PREFIX "OptionsCogwheel") != string::npos) {
+			m_CurrentScene = sc_OptionsMenu;
+		}
+		else if (theButtonClicked.find(BUTTON_PREFIX "PlayButton") != string::npos) {
+			m_CurrentScene = sc_GameplayScene;
+		}
+	}
+	//OptionsMenu --> MainMenu
+	else if (currentSceneName.find(SCENE_PREFIX "OptionsMenu") != string::npos && theButtonClicked.find(BUTTON_PREFIX "ExitOptns") != string::npos) {
+		m_CurrentScene = sc_MainMenu;
+	}
+
+	m_CurrentScene.EnableAllSprites();
+
+	SortSpritesForRendering();
 }
 
 
@@ -242,44 +291,30 @@ void Game::ClickOnSprite(SDL_Event& theEvent, vector<Sprite*> theClickableSprite
 		//If the mouse is INSIDE the sprite rectangle upon clicking
 		if (SDL_PointInRect(&mousePosition, spriteToCheck->getRect()))
 		{
-			if (spriteToCheck->getSpriteName().find(BUTTON_PREFIX "PlayButton") != string::npos) {
+			string currentSpriteName = spriteToCheck->getSpriteName();
+			if (currentSpriteName.find(BUTTON_PREFIX "PlayButton") != string::npos && spriteToCheck->IsEnabled()) {
 
-				//Destroy All Menu Sprites
-				vector<Sprite*> allMenuSprites = GetAllSprites(Menu);
-				for (Sprite* menuSprite : allMenuSprites)
-					menuSprite->Destroy();
+				cout << "Clicked on Play Button" << endl;
 
-				//Change Scene
-				SetCurrentSceneName(SCENE_PREFIX "Game");
-				SDL_SetWindowTitle(m_mainWindow, GetCurrentSceneName().c_str());
-
-				//Set up scene
-				//	spawn game sprites
-				//	spawn UI sprites
-			}
-			else if (spriteToCheck->getSpriteName().find(BUTTON_PREFIX "OptionsButton") != string::npos) {
-				cout << "Clicked on Options button" << endl;
-
-				//Destroy All Menu Sprites
-				vector<Sprite*> allMenuSprites = GetAllSprites(Menu);
-				for (Sprite* menuSprite : allMenuSprites) 
-					if(menuSprite->getSpriteName().find(BACKGROUND_PREFIX) == string::npos)
-						menuSprite->Destroy();
+				GoToNextScene(currentSpriteName);
 				
-
-				//Change Scene
-				SetCurrentSceneName(SCENE_PREFIX "Options");
-				SDL_SetWindowTitle(m_mainWindow, GetCurrentSceneName().c_str());
-				//Set up scene
-				//	spawn UI sprites
-				//
-
-				//tempResolutionButton.Create(m_Renderer, );
 			}
-			else if (spriteToCheck->getSpriteName().find(BUTTON_PREFIX "QuitButton") != string::npos) {
+			else if (currentSpriteName.find(BUTTON_PREFIX "OptionsCogwheel") != string::npos && spriteToCheck->IsEnabled()) {
+				cout << "Clicked on Options button" << endl;
+				
+				GoToNextScene(currentSpriteName);
+
+			}
+			else if (currentSpriteName.find(BUTTON_PREFIX "ExitOptns") != string::npos && spriteToCheck->IsEnabled()) {
+				cout << "Clicked on Exit Options Button" << endl;
+
+				GoToNextScene(currentSpriteName);
+			}
+			else if (currentSpriteName.find(BUTTON_PREFIX "QuitButton") != string::npos && spriteToCheck->IsEnabled()) {
 				cout << "Clicked on Quit button" << endl;
 				IS_RUNNING_MAIN = false;
 			}
+			
 		}
 	}
 }
@@ -295,6 +330,7 @@ void Game::HoverOverSprite(SDL_Event& theEvent, vector<Sprite*> theHoverableSpri
 		if (spriteToCheck->getSpriteName().find(BUTTON_PREFIX "PlayButton") != string::npos) {
 			//Hovering over Play Button
 			if (SDL_PointInRect(&mousePosition, spriteToCheck->getRect())) {
+				//cout << "Hovering over play button" << endl;
 				spriteToCheck->setTexture(m_Renderer, "Assets/tempplay_hover.png");
 			}
 			else //NOT hovering over Play Button
@@ -339,10 +375,10 @@ void Game::HandleEvents() {
 			}
 			break;
 		case SDL_MOUSEBUTTONDOWN:
-			ClickOnSprite(event, Menu.GetSpriteList());
+			ClickOnSprite(event, m_CurrentScene.m_ListOfSprites);
 			break;
 		case SDL_MOUSEMOTION:
-			HoverOverSprite(event, Menu.GetSpriteList());
+			HoverOverSprite(event, m_CurrentScene.m_ListOfSprites);
 			break;
 		default:
 			break;//event type
@@ -351,18 +387,93 @@ void Game::HandleEvents() {
 
 void Game::Update() {
 	count++;
+	SDL_SetWindowTitle(m_mainWindow, m_CurrentScene.GetName().c_str());
 
 	//count / FPS = Timer in seconds
 	//cout << count << endl;
 }
 
+void Game::SortSpritesForRendering() {
+	/**
+	* BG  0
+	* *   1
+	* BT  2
+	* TXT 3
+	*/
+
+	//replace the prefixes with numbers for sorting
+	for (Sprite* sprite : m_CurrentScene.m_ListOfSprites) {
+		string newName = sprite->getSpriteName();
+		if (sprite->getSpriteName().find(BACKGROUND_PREFIX) != string::npos) {
+			newName = "0" + sprite->getSpriteName().substr(2);
+		}
+		else if (sprite->getSpriteName().find(BUTTON_PREFIX) != string::npos) {
+			newName = "2" + sprite->getSpriteName().substr(2);
+		}
+		else if (sprite->getSpriteName().find(TEXT_PREFIX) != string::npos) {
+			newName = "3" + sprite->getSpriteName().substr(3);
+		}
+		else {
+			newName = "1" + newName;
+		}
+
+		sprite->setSpriteName(newName.c_str());
+	}
+
+
+	//Sort
+	int n = m_CurrentScene.m_ListOfSprites.size();
+	for (int j = 0; j < n - 1; j++) {
+
+		// Comparing adjacent elements
+		if (m_CurrentScene.m_ListOfSprites[j] > m_CurrentScene.m_ListOfSprites[j + 1])
+
+			// Swapping if in the wrong order
+			swap(m_CurrentScene.m_ListOfSprites[j], m_CurrentScene.m_ListOfSprites[j + 1]);
+	}
+
+	//revert to original names
+	for (Sprite* sprite : m_CurrentScene.GetSpriteList()) {
+		string newName = sprite->getSpriteName();
+		if (sprite->getSpriteName().substr(0,2).find("0") != string::npos) {
+			newName = "BG_" + sprite->getSpriteName().substr(2);
+		}
+		else if (sprite->getSpriteName().substr(0, 2).find("2") != string::npos) {
+			newName = "BT_" + sprite->getSpriteName().substr(2);
+		}
+		else if (sprite->getSpriteName().substr(0, 2).find("3") != string::npos) {
+			newName = "TXT_" + sprite->getSpriteName().substr(3);
+		}
+		else if (sprite->getSpriteName().substr(0, 2).find("1") != string::npos) {
+			newName = newName.substr(1);
+		}
+
+		sprite->setSpriteName(newName.c_str());
+	}
+
+}
+
 void Game::Render() {
 	SDL_RenderClear(m_Renderer);
-	//////////////////////////
+	//////////////////////////	
 
-	//Render Menu sprites
-	for (Sprite* menuSprite : Menu.GetSpriteList()) 
-		SDL_RenderCopy(m_Renderer, menuSprite->getTexture(), NULL, menuSprite->getRect());
+	for (Sprite* spriteInScene : m_CurrentScene.GetSpriteList())
+		if (spriteInScene->IsEnabled()) 
+			SDL_RenderCopy(m_Renderer, spriteInScene->getTexture(), NULL, spriteInScene->getRect());
+
+	/*if (m_CurrentScene.GetName().find(SCENE_PREFIX "MainMenu") != string::npos) {
+		for (Sprite* spriteInScene : m_CurrentScene.GetSpriteList())
+			if (spriteInScene->IsEnabled()) {
+				SDL_RenderCopy(m_Renderer, spriteInScene->getTexture(), NULL, spriteInScene->getRect());
+			}
+	}
+
+	if (m_CurrentScene.GetName().find(SCENE_PREFIX "Options") != string::npos) {
+		for (Sprite* spriteInScene : m_CurrentScene.GetSpriteList())
+			if (spriteInScene->IsEnabled()) {
+				SDL_RenderCopy(m_Renderer, spriteInScene->getTexture(), NULL, spriteInScene->getRect());
+			}
+	}*/
 	
 
 	/////////////////////////
@@ -371,10 +482,12 @@ void Game::Render() {
 
 void Game::Reset() {
 
-	SetCurrentSceneName(SCENE_PREFIX "MainMenu");
-	SDL_SetWindowTitle(m_mainWindow, GetCurrentSceneName().c_str());
+	//SetCurrentSceneName(SCENE_PREFIX "MainMenu");
+	m_CurrentScene = sc_MainMenu;
 
-	vector<Sprite*> menuSprites = Menu.GetSpriteList();
+
+
+	vector<Sprite*> menuSprites = sc_MainMenu.GetSpriteList();
 	map< string, map<string, vector<string> > >::iterator iter1(g_SettingsFileMap.begin());
 	
 	//Iterate through the settings map, then populate the sprite data
@@ -394,6 +507,7 @@ void Game::Reset() {
 				menuSprites.at(iterIndex)->setPosition(stoi(data.at(0)), stoi(data.at(1)));
 				menuSprites.at(iterIndex)->setDimenstions(stoi(data.at(2)), stoi(data.at(3)));
 				menuSprites.at(iterIndex)->setTexture(m_Renderer, data.at(4).c_str());
+				menuSprites.at(iterIndex)->Enable();
 				iterIndex++;
 			}
 		}
@@ -416,7 +530,7 @@ void Game::CreateInitialSaveSate() {
 
 		//Main Menu Sprites
 		tempFile << "SS_SPRITES\n";
-		vector<Sprite*> menuSprites = Menu.GetSpriteList();
+		vector<Sprite*> menuSprites = sc_MainMenu.GetSpriteList();
 		for (int i = 0; i < menuSprites.size(); i++)
 		{
 			Sprite currentSprite = *menuSprites.at(i);
@@ -439,6 +553,8 @@ void Game::Clean(){
 	SDL_DestroyWindow(m_mainWindow);
 	SDL_DestroyRenderer(m_Renderer);
 	SDL_Quit();
+	TTF_CloseFont(g_Font);
+	TTF_Quit();
 	cout << "Game shut down successfully" << endl;
 }
 

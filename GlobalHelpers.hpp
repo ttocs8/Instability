@@ -1,4 +1,5 @@
 #include <SDL_platform.h>
+#include "SDL_ttf.h"
 #include <string>
 #ifdef _WIN32
 #include <io.h> 
@@ -29,11 +30,12 @@
 #define SAVE_STATE_PREFIX "SS_"
 #define BACKGROUND_PREFIX "BG_"
 #define BUTTON_PREFIX "BT_"
+#define TEXT_PREFIX "TXT_"
 
 //Settings Constants
 #define DEFAULT_RESOLUTION_W 960
 #define DEFAULT_RESOLUTION_H 540
-
+#define FONT_COLOR_WHITE { 255, 255, 255 }
 
 class GlobalHelpers {
 public:
