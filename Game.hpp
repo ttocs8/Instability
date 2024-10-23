@@ -16,22 +16,6 @@ struct ScreenResolution_t {
 	int H = DEFAULT_RESOLUTION_H;
 };
 
-struct SceneNode {
-	//data
-	Scene m_Scene;
-
-	//linked list nodes
-	SceneNode* prevNode;
-	SceneNode* nextNode;
-
-	// Constructor to initialize Node with data
-	SceneNode(Scene &theScene) {
-		m_Scene = theScene;
-		nextNode = nullptr;
-		prevNode = nullptr;
-	}
-};
-
 class Game {
 
 public:
