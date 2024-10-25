@@ -21,6 +21,9 @@ Sprite tempResolutionButton2;
 Sprite tempResolutionButton3;
 
 Scene sc_GameplayScene;
+Sprite bg3;
+Sprite backToMenuButton;
+
 
 TTF_Font* g_Font;
 
@@ -267,6 +270,9 @@ void Game::GoToNextScene(string theButtonClicked) {
 	else if (currentSceneName.find(SCENE_PREFIX "OptionsMenu") != string::npos && theButtonClicked.find(BUTTON_PREFIX "ExitOptns") != string::npos) {
 		m_CurrentScene = sc_MainMenu;
 	}
+	else if (currentSceneName.find(SCENE_PREFIX "INSTABILITY") != string::npos && theButtonClicked.find(BUTTON_PREFIX "BackToMenu") != string::npos) {
+		m_CurrentScene = sc_MainMenu;
+	}
 
 	m_CurrentScene.EnableAllSprites();
 
@@ -279,6 +285,37 @@ void Game::SetResolution(int w, int h) {
 	m_CurrentScreenResolution.H = h;
 }
 
+void Game::SetUpGameplayGrid()
+{
+	const int gridRows = 4;
+	const int gridCols = 9;
+
+	int hexWidth = 95;
+	int hexHeight = 90; 
+
+	//CENTERED
+	int gridXPos = (GetCurrentResolution().W / 2) - ( (gridCols * hexWidth) / 2);
+	int gridYPos = (GetCurrentResolution().H / 2) - ( (gridRows * hexHeight) / 2);;
+
+	Sprite* hexGrid[gridRows][gridCols]{};
+
+	for (int i = 0; i < gridRows; i++) {
+		for (int j = 0; j < gridCols; j++) {
+			string nodeName = "Hexagon [" + to_string(i) + "," + to_string(j) + "]";
+			hexGrid[i][j] = new Sprite(m_Renderer, "Assets/temphex.png", hexWidth, hexHeight, gridXPos + (j * hexWidth), gridYPos + (i *  (hexHeight + 5)), nodeName.c_str());
+
+			//offset the Y of every other column
+			if (j % 2 == 0) {
+				hexGrid[i][j]->setYPos(hexGrid[i][j]->getRect()->y + (hexGrid[i][j]->getRect()->h) / 2);
+			}
+
+			sc_GameplayScene.AddSpriteToList(hexGrid[i][j]);
+		}
+	}
+
+	m_IsGameplayGridSetUp = true;
+}
+
 void Game::ClickOnSprite(SDL_Event& theEvent, vector<Sprite*> theClickableSprites)
 {
 	SDL_Point mousePosition;
@@ -289,15 +326,28 @@ void Game::ClickOnSprite(SDL_Event& theEvent, vector<Sprite*> theClickableSprite
 	for (Sprite* spriteToCheck : theClickableSprites) {
 
 		//If the mouse is INSIDE the sprite rectangle upon clicking
-		if (SDL_PointInRect(&mousePosition, spriteToCheck->getRect()))
+		if (SDL_PointInRect(&mousePosition, spriteToCheck->getRect()) && theEvent.button.button == SDL_BUTTON_LEFT)
 		{
 			string currentSpriteName = spriteToCheck->getSpriteName();
 			if (currentSpriteName.find(BUTTON_PREFIX "PlayButton") != string::npos && spriteToCheck->IsEnabled()) {
 
 				cout << "Clicked on Play Button" << endl;
 
-				GoToNextScene(currentSpriteName);
-				
+				if (!m_IsGameplayGridSetUp) {
+					backToMenuButton.Create(m_Renderer, "Assets/tempoptions2.png", 50, 50, GetCurrentResolution().W - 75, 25, "BT_BackToMenu");
+					sc_GameplayScene.AddSpriteToList(&backToMenuButton);
+
+					//TEMPORARY BACKGROUND IMAGE - PLS REPLACE SOON ISH THANKS
+					bg3.Create(m_Renderer, "Assets/menubackground3.png", GetCurrentResolution().W, GetCurrentResolution().H, 0, 0, "BG_BACKGROUND2");
+					sc_GameplayScene.AddSpriteToList(&bg3);
+
+					//Set up the grid
+					// FOR NOW it is a 9x4 grid of hexagons
+					//	In the future, read the grid wanted in from a file that describes how the grid should be set up
+					SetUpGameplayGrid();
+				}
+
+				GoToNextScene(currentSpriteName);				
 			}
 			else if (currentSpriteName.find(BUTTON_PREFIX "OptionsCogwheel") != string::npos && spriteToCheck->IsEnabled()) {
 				cout << "Clicked on Options button" << endl;
@@ -314,7 +364,14 @@ void Game::ClickOnSprite(SDL_Event& theEvent, vector<Sprite*> theClickableSprite
 				cout << "Clicked on Quit button" << endl;
 				IS_RUNNING_MAIN = false;
 			}
-			
+			else if (currentSpriteName.find("Hexagon") != string::npos && spriteToCheck->IsEnabled()) {
+				cout << "Clicked on " << currentSpriteName << endl;
+			}
+			else if (currentSpriteName.find(BUTTON_PREFIX "BackToMenu") != string::npos && spriteToCheck->IsEnabled()) {
+				cout << "Clicked on Leave Game" << endl;
+
+				GoToNextScene(currentSpriteName);
+			}
 		}
 	}
 }
@@ -368,7 +425,7 @@ void Game::HandleEvents() {
 					IS_RUNNING_MAIN = false;
 					break;
 				case SDLK_r:
-					Reset();
+					//Reset();
 					break;
 				default:
 					break;//keydown event
@@ -389,8 +446,8 @@ void Game::Update() {
 	count++;
 	SDL_SetWindowTitle(m_mainWindow, m_CurrentScene.GetName().c_str());
 
-	//count / FPS = Timer in seconds
-	//cout << count << endl;
+    //count / FPS = Timer in seconds
+	//cout << count / FPS << endl;
 }
 
 void Game::SortSpritesForRendering() {
@@ -424,9 +481,12 @@ void Game::SortSpritesForRendering() {
 	//Sort
 	int n = m_CurrentScene.m_ListOfSprites.size();
 	for (int j = 0; j < n - 1; j++) {
-
+		
 		// Comparing adjacent elements
-		if (m_CurrentScene.m_ListOfSprites[j] > m_CurrentScene.m_ListOfSprites[j + 1])
+		char currentChar = m_CurrentScene.m_ListOfSprites[j]->m_SpriteName[0];
+		char nextChar = m_CurrentScene.m_ListOfSprites[j + 1]->m_SpriteName[0];
+
+		if (int(currentChar) > int(nextChar))
 
 			// Swapping if in the wrong order
 			swap(m_CurrentScene.m_ListOfSprites[j], m_CurrentScene.m_ListOfSprites[j + 1]);
@@ -461,58 +521,43 @@ void Game::Render() {
 		if (spriteInScene->IsEnabled()) 
 			SDL_RenderCopy(m_Renderer, spriteInScene->getTexture(), NULL, spriteInScene->getRect());
 
-	/*if (m_CurrentScene.GetName().find(SCENE_PREFIX "MainMenu") != string::npos) {
-		for (Sprite* spriteInScene : m_CurrentScene.GetSpriteList())
-			if (spriteInScene->IsEnabled()) {
-				SDL_RenderCopy(m_Renderer, spriteInScene->getTexture(), NULL, spriteInScene->getRect());
-			}
-	}
-
-	if (m_CurrentScene.GetName().find(SCENE_PREFIX "Options") != string::npos) {
-		for (Sprite* spriteInScene : m_CurrentScene.GetSpriteList())
-			if (spriteInScene->IsEnabled()) {
-				SDL_RenderCopy(m_Renderer, spriteInScene->getTexture(), NULL, spriteInScene->getRect());
-			}
-	}*/
-	
-
 	/////////////////////////
 	SDL_RenderPresent(m_Renderer);
 }
 
-void Game::Reset() {
-
-	//SetCurrentSceneName(SCENE_PREFIX "MainMenu");
-	m_CurrentScene = sc_MainMenu;
-
-
-
-	vector<Sprite*> menuSprites = sc_MainMenu.GetSpriteList();
-	map< string, map<string, vector<string> > >::iterator iter1(g_SettingsFileMap.begin());
-	
-	//Iterate through the settings map, then populate the sprite data
-	int iterIndex = 0;
-	for (map< string, map<string, vector<string> > >::iterator iter1 = g_SettingsFileMap.begin(); iter1 != g_SettingsFileMap.end(); iter1++) {
-
-		auto& settingName = (*iter1).first;
-		if (settingName.find("SPRITE") != string::npos) {
-
-			map<string, vector<string> >::iterator iter2((*iter1).second.begin());
-			for (map<string, vector<string> >::iterator iter2 = (*iter1).second.begin(); iter2 != (*iter1).second.end(); iter2++) {
-
-				auto& spriteName = (*iter2).first;
-				auto& data = (*iter2).second;
-
-				menuSprites.at(iterIndex)->setSpriteName(spriteName.c_str());
-				menuSprites.at(iterIndex)->setPosition(stoi(data.at(0)), stoi(data.at(1)));
-				menuSprites.at(iterIndex)->setDimenstions(stoi(data.at(2)), stoi(data.at(3)));
-				menuSprites.at(iterIndex)->setTexture(m_Renderer, data.at(4).c_str());
-				menuSprites.at(iterIndex)->Enable();
-				iterIndex++;
-			}
-		}
-	}
-}
+//void Game::Reset() {
+//
+//	//SetCurrentSceneName(SCENE_PREFIX "MainMenu");
+//	m_CurrentScene.DisableAllSprites();
+//	m_CurrentScene = sc_MainMenu;
+//	m_CurrentScene.EnableAllSprites();
+//
+//	vector<Sprite*> menuSprites = sc_MainMenu.GetSpriteList();
+//	map< string, map<string, vector<string> > >::iterator iter1(g_SettingsFileMap.begin());
+//	
+//	//Iterate through the settings map, then populate the sprite data
+//	int iterIndex = 0;
+//	for (map< string, map<string, vector<string> > >::iterator iter1 = g_SettingsFileMap.begin(); iter1 != g_SettingsFileMap.end(); iter1++) {
+//
+//		auto& settingName = (*iter1).first;
+//		if (settingName.find("SPRITE") != string::npos) {
+//
+//			map<string, vector<string> >::iterator iter2((*iter1).second.begin());
+//			for (map<string, vector<string> >::iterator iter2 = (*iter1).second.begin(); iter2 != (*iter1).second.end(); iter2++) {
+//
+//				auto& spriteName = (*iter2).first;
+//				auto& data = (*iter2).second;
+//
+//				menuSprites.at(iterIndex)->setSpriteName(spriteName.c_str());
+//				menuSprites.at(iterIndex)->setPosition(stoi(data.at(0)), stoi(data.at(1)));
+//				menuSprites.at(iterIndex)->setDimenstions(stoi(data.at(2)), stoi(data.at(3)));
+//				menuSprites.at(iterIndex)->setTexture(m_Renderer, data.at(4).c_str());
+//				menuSprites.at(iterIndex)->Enable();
+//				iterIndex++;
+//			}
+//		}
+//	}
+//}
 
 void Game::CreateInitialSaveSate() {
 

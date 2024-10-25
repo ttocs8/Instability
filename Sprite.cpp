@@ -5,6 +5,18 @@ Sprite::Sprite()
 	m_Rect = new SDL_Rect();
 }
 
+Sprite::Sprite(SDL_Renderer* theRenderer, const char* theFullPathToImage, int w, int h, int x, int y, const char* theName, bool isScreenCentered, int xOffset, int yOffset)
+{
+	m_Rect = new SDL_Rect();
+	Create(theRenderer, theFullPathToImage, w, h, x, y, theName, isScreenCentered, xOffset, yOffset);
+}
+
+Sprite::Sprite(SDL_Renderer* theRenderer, const char* theFullPathToImage, int w, int h, int x, int y, const char* theName)
+{
+	m_Rect = new SDL_Rect();
+	Create(theRenderer, theFullPathToImage, w, h, x, y, theName);
+}
+
 Sprite::~Sprite(){}
 
 void Sprite::Create(SDL_Renderer* theRenderer, const char* theFullPathToImage, int w, int h, int x, int y, const char* theName, bool isScreenCentered, int xOffset, int yOffset) {
@@ -44,6 +56,14 @@ void Sprite::setPosition(int theXPos, int theYPos) {
 	//SDL_assert(m_Texture != NULL);
 	m_Rect->x = theXPos;
 	m_Rect->y = theYPos;
+}
+
+void Sprite::setYPos(int theYPos) {
+	m_Rect->y = theYPos;
+}
+
+void Sprite::setXPos(int theXPos) {
+	m_Rect->x = theXPos;
 }
 
 void Sprite::setSpriteName(const char* theName) {

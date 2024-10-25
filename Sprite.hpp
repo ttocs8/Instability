@@ -9,6 +9,8 @@ using namespace std;
 class Sprite {
 public:
 	Sprite();
+	Sprite(SDL_Renderer* theRenderer, const char* theFullPathToImage, int w, int h, int x, int y, const char* theName, bool isScreenCentered, int xOffset, int yOffset);
+	Sprite(SDL_Renderer* theRenderer, const char* theFullPathToImage, int w, int h, int x, int y, const char* theName);
 	~Sprite();
 	string m_SpriteName = "";
 
@@ -17,6 +19,8 @@ public:
 	void setTexture(SDL_Texture* theTexture);
 	void setDimenstions(int w, int h);
 	void setPosition(int x, int y);
+	void setYPos(int theYPos);
+	void setXPos(int theXPos);
 	void setSpriteName(const char* theName);
 	void setText(SDL_Renderer* theRenderer, TTF_Font* theFont, SDL_Color theColor, string theMessage);
 	bool IsEnabled() { return m_IsEnabled; };
@@ -32,9 +36,11 @@ public:
 
 	void Destroy();
 
-	friend bool operator>(const Sprite& m1, const Sprite& m2) {
-		int(m1.m_SpriteName[0]) > int(m2.m_SpriteName[0]);
-	};
+	/*friend bool operator>(const Sprite& m1, const Sprite& m2) {
+		char left = m1.m_SpriteName[0];
+		char right = m2.m_SpriteName[0];
+		int(left) > int(right);
+	};*/
 
 private:
 	SDL_Texture* m_Texture = 0;

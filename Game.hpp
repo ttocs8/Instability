@@ -31,6 +31,7 @@ public:
 	void Clean();
 
 	bool IsRunning() { return IS_RUNNING_MAIN; };
+	bool IsGamePlayGridSetUp() { return IS_RUNNING_MAIN; };
 
 	~Game();
 
@@ -42,9 +43,11 @@ private:
 	string m_GameDataFolder = "";
 	ScreenResolution_t m_CurrentScreenResolution;
 	Scene m_CurrentScene;
+	bool m_IsGameplayGridSetUp = false;
 
 	void SetResolution(int w, int h);
 	ScreenResolution_t GetCurrentResolution() { return m_CurrentScreenResolution; };
+	void SetUpGameplayGrid();
 	void ClickOnSprite(SDL_Event& theEvent, vector<Sprite*> theClickableSprites);
 	void HoverOverSprite(SDL_Event& theEvent, vector<Sprite*> theHoverableSprites);
 	void GoToNextScene(string theButtonClicked);
