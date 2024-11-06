@@ -45,6 +45,8 @@
 
 //Gameplay Constants
 #define TURRET_COST 20
+#define WALL_COST 10
+#define FACTORY_COST 30
 
 class GlobalHelpers {
 public:
