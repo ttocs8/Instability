@@ -2,6 +2,7 @@
 #include "SDL_image.h"
 #include "Scene.hpp"
 #include <iostream>
+#include <sstream>
 #include <vector>
 #include <string>
 #include <fstream>
@@ -14,6 +15,8 @@ using namespace std;
 struct ScreenResolution_t {
 	int W = DEFAULT_RESOLUTION_W;
 	int H = DEFAULT_RESOLUTION_H;
+	int RW = RENDER_RESOLUTION_W;
+	int RH = RENDER_RESOLUTION_H;
 };
 
 class Game {

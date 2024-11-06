@@ -18,6 +18,14 @@ void Scene::EnableAllSprites() {
 		sprite->Enable();
 }
 
+void Scene::EnableAllSprites_Except(std::string theNameToFilter) {
+	for (Sprite* sprite : m_ListOfSprites)
+		if (sprite->getSpriteName().find(theNameToFilter) == std::string::npos)
+			sprite->Enable();
+		else
+			sprite->Disable();
+}
+
 void Scene::DisableAllSprites() {
 	for (Sprite* sprite : m_ListOfSprites)
 		sprite->Disable();

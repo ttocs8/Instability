@@ -16,9 +16,14 @@ public:
 	string GetName() { return  m_SceneName; }
 	void SetName(std::string theName) { m_SceneName = theName; }
 	void EnableAllSprites();
+	void EnableAllSprites_Except(std::string theNameToFilter);
 	void DisableAllSprites();
 
 	std::vector<Sprite*> m_ListOfSprites;
+	//0 - main menu
+	//1 - options menu
+	//2 - gameplay
+	int m_SceneEnum = 0;
 
 private:
 	std::string m_SceneName = "";

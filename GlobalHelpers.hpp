@@ -33,9 +33,18 @@
 #define TEXT_PREFIX "TXT_"
 
 //Settings Constants
-#define DEFAULT_RESOLUTION_W 960
-#define DEFAULT_RESOLUTION_H 540
-#define FONT_COLOR_WHITE { 255, 255, 255 }
+#define DEFAULT_RESOLUTION_W 1280
+#define DEFAULT_RESOLUTION_H 720
+#define RENDER_RESOLUTION_W 640
+#define RENDER_RESOLUTION_H 360
+
+
+#define COLOR_WHITE { 255, 255, 255 }
+#define COLOR_RED { 236, 33, 40 }
+
+
+//Gameplay Constants
+#define TURRET_COST 20
 
 class GlobalHelpers {
 public:

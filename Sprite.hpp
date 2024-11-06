@@ -18,34 +18,31 @@ public:
 	void setTexture(SDL_Renderer* theRenderer, const char* theFullPathToImage);
 	void setTexture(SDL_Texture* theTexture);
 	void setDimenstions(int w, int h);
+	void setWidth(int w);
 	void setPosition(int x, int y);
 	void setYPos(int theYPos);
 	void setXPos(int theXPos);
 	void setSpriteName(const char* theName);
 	void setText(SDL_Renderer* theRenderer, TTF_Font* theFont, SDL_Color theColor, string theMessage);
 	bool IsEnabled() { return m_IsEnabled; };
+	bool compareColor(SDL_Color theColorToCompare);
+
 	void Disable() { m_IsEnabled = false; };
 	void Enable() { m_IsEnabled = true; };
 
-	void SaveSprite();
-
 	string getSpriteName();
 	SDL_Texture* getTexture();
+	SDL_Color getColor();
 	string getTextureSource() { return m_SpriteTextureSource; };
 	SDL_Rect* getRect();
 
 	void Destroy();
 
-	/*friend bool operator>(const Sprite& m1, const Sprite& m2) {
-		char left = m1.m_SpriteName[0];
-		char right = m2.m_SpriteName[0];
-		int(left) > int(right);
-	};*/
-
 private:
 	SDL_Texture* m_Texture = 0;
 	SDL_Rect* m_Rect;
 	string m_SpriteTextureSource = "";
+	SDL_Color m_Color;
 	bool m_IsEnabled = false;
 	
 };

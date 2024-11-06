@@ -23,12 +23,30 @@ Sprite tempResolutionButton3;
 Scene sc_GameplayScene;
 Sprite bg3;
 Sprite backToMenuButton;
+Sprite buyTurretButton;
+Sprite resourceCounterText;
+Sprite resourceCounterText2;
+const int gridRows = 4;
+const int gridCols = 9;
+Sprite* defaultHexGrid[gridRows][gridCols]{};
+int defaultGridData[gridRows][gridCols]
+{
+	{0,0,0,0,0,0,0,0,0},
+	{0,0,0,0,0,0,0,0,0},
+	{0,0,0,0,0,0,0,0,0},
+	{0,0,0,0,0,0,0,0,0}
+};
+bool g_BuyTurretToggle = false;
 
 
 TTF_Font* g_Font;
 
 string g_SaveStatesFolder;
 map< string, map<string, vector<string> > > g_SettingsFileMap;
+
+int g_ResourceTimer = 0;
+int g_EnergyCount = 0;
+int g_GameSecondsPassed = 0;
 
 Game::Game() {
 	m_GameDataFolder = SDL_GetPrefPath(ORG_NAME, APP_NAME);
@@ -102,7 +120,6 @@ int Game::init(
 	bool isFullscreen
 )
 {
-
 
 	string firstTimeInitFilePath = g_SaveStatesFolder + GlobalHelpers::GetOSSeparator() + FIRST_TIME_INIT_FILENAME + ".init";
 	bool isFirstTimeInit = !GlobalHelpers::FileExists(firstTimeInitFilePath.c_str());
@@ -181,11 +198,12 @@ int Game::init(
 
 		int windowFlags = 0;
 		if (isFullscreen)
-			windowFlags = SDL_WINDOW_FULLSCREEN;
+			windowFlags = SDL_WINDOW_FULLSCREEN_DESKTOP;
 		
-		m_mainWindow = SDL_CreateWindow(title, xpos, ypos, w, h, windowFlags);
 		SetResolution(w, h);
+		m_mainWindow = SDL_CreateWindow(title, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, w, h, windowFlags);
 		//SDL_SetWindowResizable(m_mainWindow,SDL_TRUE);
+
 		if (m_mainWindow) {
 			cout << "Window created..." << endl;
 		}
@@ -193,6 +211,7 @@ int Game::init(
 		m_Renderer = SDL_CreateRenderer(m_mainWindow, -1, 0);
 		if (m_Renderer) {
 			SDL_SetRenderDrawColor(m_Renderer, 255, 255, 255, 255);
+			SDL_RenderSetLogicalSize(m_Renderer, RENDER_RESOLUTION_W, RENDER_RESOLUTION_H);
 			cout << "Renderer created..." << endl;
 		}
 
@@ -211,18 +230,18 @@ int Game::init(
 	TTF_Init();
 
 	//Create Main Menu sprites
-	bg1.Create(m_Renderer, "Assets/menubackground3.png", w, h, 0, 0, "BG_BACKGROUND");
-	titleCard.Create(m_Renderer, "Assets/titlecard.png", 500, 200, GetCurrentResolution().W / 2, GetCurrentResolution().H / 2, "TitleCard", true, 0, -100);
-	tempPlayButton.Create(m_Renderer, "Assets/tempplay.png", 150, 75, GetCurrentResolution().W / 2, GetCurrentResolution().H / 2, "BT_PlayButton", true, 0, 25);
-	tempQuitButton.Create(m_Renderer, "Assets/tempquit.png", 150, 75, GetCurrentResolution().W / 2, GetCurrentResolution().H / 2, "BT_QuitButton", true, 0, 125);
-	tempOptionsButton.Create(m_Renderer, "Assets/tempoptions.png", 50, 50, GetCurrentResolution().W - 75, 25, "BT_OptionsCogwheel");
+	bg1.Create(m_Renderer, "Assets/menubackground4.png", -1, -1, 0, 0, "BG_BACKGROUND");
+	titleCard.Create(m_Renderer, "Assets/titlecard2.png", -1, -1, RENDER_RESOLUTION_W / 2, RENDER_RESOLUTION_H / 2, "TitleCard", true);
+	tempPlayButton.Create(m_Renderer, "Assets/tempplay.png", -1, -1, RENDER_RESOLUTION_W / 2, RENDER_RESOLUTION_H / 2, "BT_PlayButton", true, 0, 25);
+	tempQuitButton.Create(m_Renderer, "Assets/tempquit.png", -1, -1, RENDER_RESOLUTION_W / 2, RENDER_RESOLUTION_H / 2, "BT_QuitButton", true, 0, 125);
+	tempOptionsButton.Create(m_Renderer, "Assets/tempoptions.png", -1, -1, RENDER_RESOLUTION_W - 75, 25, "BT_OptionsCogwheel");
 	sc_MainMenu.AddSpritesToList({ &bg1, &titleCard, &tempPlayButton, &tempQuitButton, &tempOptionsButton });
 	sc_MainMenu.SetName(SCENE_PREFIX "MainMenu");
 
 
 	//Create Options Menu Sprites
-	bg2.Create(m_Renderer, "Assets/menubackground3.png", w, h, 0, 0, "BG_BACKGROUND2");
-	tempOptionsButton2.Create(m_Renderer, "Assets/tempoptions2.png", 50, 50, GetCurrentResolution().W - 75, 25, "BT_ExitOptns");
+	bg2.Create(m_Renderer, "Assets/menubackground4.png", -1, -1, 0, 0, "BG_BACKGROUND2");
+	tempOptionsButton2.Create(m_Renderer, "Assets/tempoptions2.png", -1, -1, RENDER_RESOLUTION_W - 75, 25, "BT_ExitOptns");
 
 	sc_OptionsMenu.SetName(SCENE_PREFIX "OptionsMenu");
 	sc_OptionsMenu.AddSpriteToList(&tempOptionsButton2);
@@ -230,7 +249,7 @@ int Game::init(
 
 	g_Font = TTF_OpenFont("Assets/Stifly.ttf", 24);
 	screenResolutionOptionsText.Create(m_Renderer, NULL, 300, 50, 0, 0, "TXT_ScreenResolution");
-	screenResolutionOptionsText.setText(m_Renderer, g_Font, FONT_COLOR_WHITE, "Screen Resolution");
+	screenResolutionOptionsText.setText(m_Renderer, g_Font, COLOR_WHITE, "Screen Resolution");
 	sc_OptionsMenu.AddSpriteToList(&screenResolutionOptionsText);
 
 	//Create Gameplay Sprites
@@ -261,21 +280,29 @@ void Game::GoToNextScene(string theButtonClicked) {
 	if (currentSceneName.find(SCENE_PREFIX "MainMenu") != string::npos){
 		if (theButtonClicked.find(BUTTON_PREFIX "OptionsCogwheel") != string::npos) {
 			m_CurrentScene = sc_OptionsMenu;
+			m_CurrentScene.m_SceneEnum = 1;
 		}
 		else if (theButtonClicked.find(BUTTON_PREFIX "PlayButton") != string::npos) {
 			m_CurrentScene = sc_GameplayScene;
+			g_GameSecondsPassed = 0;
+			m_CurrentScene.m_SceneEnum = 2;
 		}
 	}
 	//OptionsMenu --> MainMenu
 	else if (currentSceneName.find(SCENE_PREFIX "OptionsMenu") != string::npos && theButtonClicked.find(BUTTON_PREFIX "ExitOptns") != string::npos) {
 		m_CurrentScene = sc_MainMenu;
+		m_CurrentScene.m_SceneEnum = 0;
 	}
 	else if (currentSceneName.find(SCENE_PREFIX "INSTABILITY") != string::npos && theButtonClicked.find(BUTTON_PREFIX "BackToMenu") != string::npos) {
+		g_EnergyCount = 0;
+		g_ResourceTimer = 0;
 		m_CurrentScene = sc_MainMenu;
+		m_CurrentScene.m_SceneEnum = 0;
+		
 	}
 
+	
 	m_CurrentScene.EnableAllSprites();
-
 	SortSpritesForRendering();
 }
 
@@ -287,33 +314,53 @@ void Game::SetResolution(int w, int h) {
 
 void Game::SetUpGameplayGrid()
 {
-	const int gridRows = 4;
-	const int gridCols = 9;
-
-	int hexWidth = 95;
-	int hexHeight = 90; 
+	int hexWidth = 30; //45
+	int hexHeight = 30; //41
 
 	//CENTERED
-	int gridXPos = (GetCurrentResolution().W / 2) - ( (gridCols * hexWidth) / 2);
-	int gridYPos = (GetCurrentResolution().H / 2) - ( (gridRows * hexHeight) / 2);;
+	int gridXPos = (RENDER_RESOLUTION_W / 2) - ( (gridCols * hexWidth) / 2);
+	int gridYPos = (RENDER_RESOLUTION_H / 2) - ( (gridRows * hexHeight) / 2);;
 
-	Sprite* hexGrid[gridRows][gridCols]{};
 
 	for (int i = 0; i < gridRows; i++) {
 		for (int j = 0; j < gridCols; j++) {
-			string nodeName = "Hexagon [" + to_string(i) + "," + to_string(j) + "]";
-			hexGrid[i][j] = new Sprite(m_Renderer, "Assets/temphex.png", hexWidth, hexHeight, gridXPos + (j * hexWidth), gridYPos + (i *  (hexHeight + 5)), nodeName.c_str());
+			string nodeName = "Hexagon [ " + to_string(i) + " , " + to_string(j) + " ]";
+			defaultHexGrid[i][j] = new Sprite(m_Renderer, "Assets/temphex.png", hexWidth, hexHeight, gridXPos + (j * (hexWidth - (hexHeight/6) + 12)) - 50, gridYPos + (i *  (hexHeight + 14)), nodeName.c_str());
 
 			//offset the Y of every other column
 			if (j % 2 == 0) {
-				hexGrid[i][j]->setYPos(hexGrid[i][j]->getRect()->y + (hexGrid[i][j]->getRect()->h) / 2);
+				defaultHexGrid[i][j]->setYPos((defaultHexGrid[i][j]->getRect()->y + (defaultHexGrid[i][j]->getRect()->h) / 2)+2);
 			}
 
-			sc_GameplayScene.AddSpriteToList(hexGrid[i][j]);
+			sc_GameplayScene.AddSpriteToList(defaultHexGrid[i][j]);
 		}
 	}
 
 	m_IsGameplayGridSetUp = true;
+}
+
+vector<int> getHexGridIndex(string str)
+{
+	stringstream ss;
+	vector<int> foundInds;
+	ss << str;
+
+	string temp;
+	int found;
+	while (!ss.eof()) {
+
+		// extracting word by word
+		ss >> temp;
+
+		// Checking the word is an int or not 
+		if (stringstream(temp) >> found)
+			foundInds.push_back(found);
+
+		// To save from space at the end of string 
+		temp = "";
+	}
+
+	return foundInds;
 }
 
 void Game::ClickOnSprite(SDL_Event& theEvent, vector<Sprite*> theClickableSprites)
@@ -326,7 +373,7 @@ void Game::ClickOnSprite(SDL_Event& theEvent, vector<Sprite*> theClickableSprite
 	for (Sprite* spriteToCheck : theClickableSprites) {
 
 		//If the mouse is INSIDE the sprite rectangle upon clicking
-		if (SDL_PointInRect(&mousePosition, spriteToCheck->getRect()) && theEvent.button.button == SDL_BUTTON_LEFT)
+		if (SDL_PointInRect(&mousePosition, spriteToCheck->getRect()) && theEvent.type == SDL_MOUSEBUTTONDOWN && theEvent.button.button == SDL_BUTTON_LEFT)
 		{
 			string currentSpriteName = spriteToCheck->getSpriteName();
 			if (currentSpriteName.find(BUTTON_PREFIX "PlayButton") != string::npos && spriteToCheck->IsEnabled()) {
@@ -334,18 +381,32 @@ void Game::ClickOnSprite(SDL_Event& theEvent, vector<Sprite*> theClickableSprite
 				cout << "Clicked on Play Button" << endl;
 
 				if (!m_IsGameplayGridSetUp) {
-					backToMenuButton.Create(m_Renderer, "Assets/tempoptions2.png", 50, 50, GetCurrentResolution().W - 75, 25, "BT_BackToMenu");
+					backToMenuButton.Create(m_Renderer, "Assets/tempoptions2.png", -1, -1,RENDER_RESOLUTION_W - 75, 25, "BT_BackToMenu");
 					sc_GameplayScene.AddSpriteToList(&backToMenuButton);
 
 					//TEMPORARY BACKGROUND IMAGE - PLS REPLACE SOON ISH THANKS
-					bg3.Create(m_Renderer, "Assets/menubackground3.png", GetCurrentResolution().W, GetCurrentResolution().H, 0, 0, "BG_BACKGROUND2");
+					bg3.Create(m_Renderer, "Assets/stars.png", RENDER_RESOLUTION_W, RENDER_RESOLUTION_H, 0, 0, "BG_BACKGROUND2");
 					sc_GameplayScene.AddSpriteToList(&bg3);
 
+					resourceCounterText.Create(m_Renderer, NULL, 100, 25, RENDER_RESOLUTION_W - 150, 75, "TXT_ResourceCounter");
+					resourceCounterText.setText(m_Renderer, g_Font, COLOR_WHITE, "ENERGY: ");
+
+					resourceCounterText2.Create(m_Renderer, NULL, 15, 25, RENDER_RESOLUTION_W - 50, 75, "TXT_ResourceCounter2");
+
+					buyTurretButton.Create(m_Renderer, NULL, 110, 25, RENDER_RESOLUTION_W - 150, 105, "TXT_BuyTurret");
+
+					sc_GameplayScene.AddSpriteToList(&resourceCounterText);
+					sc_GameplayScene.AddSpriteToList(&resourceCounterText2);
+					sc_GameplayScene.AddSpriteToList(&buyTurretButton);
+					
 					//Set up the grid
 					// FOR NOW it is a 9x4 grid of hexagons
 					//	In the future, read the grid wanted in from a file that describes how the grid should be set up
 					SetUpGameplayGrid();
 				}
+
+				buyTurretButton.setText(m_Renderer, g_Font, COLOR_WHITE, "TURRET: 20");
+
 
 				GoToNextScene(currentSpriteName);				
 			}
@@ -366,11 +427,62 @@ void Game::ClickOnSprite(SDL_Event& theEvent, vector<Sprite*> theClickableSprite
 			}
 			else if (currentSpriteName.find("Hexagon") != string::npos && spriteToCheck->IsEnabled()) {
 				cout << "Clicked on " << currentSpriteName << endl;
+
+				//Turret buying
+				if (g_BuyTurretToggle) {
+					vector<int> inds = getHexGridIndex(currentSpriteName);
+					int row = inds.at(0);
+					int col = inds.at(1);
+
+					if (g_EnergyCount >= TURRET_COST && defaultGridData[row][col] == 0) {
+						g_ResourceTimer -= TURRET_COST;
+						defaultGridData[row][col] = 1;
+					}
+
+					g_BuyTurretToggle = false;
+				}
+				//
+
+			/*	int currentYpos = spriteToCheck->getRect()->y;
+				spriteToCheck->setYPos(currentYpos + 1);*/
+				
+				cout << g_EnergyCount << endl;
+
 			}
 			else if (currentSpriteName.find(BUTTON_PREFIX "BackToMenu") != string::npos && spriteToCheck->IsEnabled()) {
 				cout << "Clicked on Leave Game" << endl;
 
 				GoToNextScene(currentSpriteName);
+			}
+			else if (currentSpriteName.find(TEXT_PREFIX "BuyTurret") != string::npos && spriteToCheck->IsEnabled()) {
+				cout << "Clicked on BUY TURRET" << endl;
+				if (g_BuyTurretToggle) 
+					g_BuyTurretToggle = false;
+				else 
+					g_BuyTurretToggle = true;
+				
+				//set BuyTurretToggle = true, if false
+
+				//set BuyTurretToggle = false, if true
+
+				////currently toggled
+				//if (buyTurretButton.compareColor(COLOR_RED))
+				//	buyTurretButton.setText(m_Renderer, g_Font, COLOR_WHITE, "TURRET: 20");
+				////currently not toggled
+				//else if(buyTurretButton.compareColor(COLOR_WHITE))
+				//	buyTurretButton.setText(m_Renderer, g_Font, COLOR_RED, "TURRET: 20");
+			}
+		}
+		else if (SDL_PointInRect(&mousePosition, spriteToCheck->getRect()) && theEvent.type == SDL_MOUSEBUTTONUP)
+		{
+			string currentSpriteName = spriteToCheck->getSpriteName();
+			if (currentSpriteName.find("Hexagon") != string::npos && spriteToCheck->IsEnabled()) {
+				/*int currentYpos = spriteToCheck->getRect()->y;
+				spriteToCheck->setYPos(currentYpos - 1);*/
+				/*vector<int> inds = getHexGridIndex(currentSpriteName);
+				int row = inds.at(0);
+				int col = inds.at(1);
+				defaultGridData[row][col] = 0;*/
 			}
 		}
 	}
@@ -406,6 +518,24 @@ void Game::HoverOverSprite(SDL_Event& theEvent, vector<Sprite*> theHoverableSpri
 				spriteToCheck->setTexture(m_Renderer, "Assets/tempquit.png");
 			}
 		}
+
+
+		if (spriteToCheck->getSpriteName().find(BUTTON_PREFIX "OptionsCogwheel") != string::npos) {
+			//Hovering over Options Cogwheel Button
+
+			//play anymation
+			if (SDL_PointInRect(&mousePosition, spriteToCheck->getRect())) {
+				
+				spriteToCheck->setTexture(m_Renderer, "Assets/tempquit_hover.png");
+				
+				spriteToCheck->setTexture(m_Renderer, "Assets/tempoptions.png");
+
+			}
+			else //NOT hovering over Quit Button
+			{
+				spriteToCheck->setTexture(m_Renderer, "Assets/tempoptions.png");
+			}
+		}
 	}
 }
 
@@ -424,14 +554,26 @@ void Game::HandleEvents() {
 				case SDLK_ESCAPE:
 					IS_RUNNING_MAIN = false;
 					break;
-				case SDLK_r:
-					//Reset();
+				case SDLK_1:
+					SDL_SetWindowSize(m_mainWindow, 1920, 1080);
+					SDL_SetWindowFullscreen(m_mainWindow, SDL_WINDOW_FULLSCREEN_DESKTOP);
+					break;
+				case SDLK_2:
+					SDL_SetWindowSize(m_mainWindow, 1280, 720);
+					SDL_SetWindowFullscreen(m_mainWindow, 0);
+					break;
+				case SDLK_3:
+					SDL_SetWindowSize(m_mainWindow, 960, 540);
+					SDL_SetWindowFullscreen(m_mainWindow, 0);
 					break;
 				default:
 					break;//keydown event
 			}
 			break;
 		case SDL_MOUSEBUTTONDOWN:
+			ClickOnSprite(event, m_CurrentScene.m_ListOfSprites);
+			break;
+		case SDL_MOUSEBUTTONUP:
 			ClickOnSprite(event, m_CurrentScene.m_ListOfSprites);
 			break;
 		case SDL_MOUSEMOTION:
@@ -444,8 +586,43 @@ void Game::HandleEvents() {
 
 void Game::Update() {
 	count++;
-	SDL_SetWindowTitle(m_mainWindow, m_CurrentScene.GetName().c_str());
+	
 
+	//0 - main menu
+	//1 - options menu
+	//2 - gameplay
+	if (m_CurrentScene.m_SceneEnum == 2) {
+		if (g_EnergyCount < 0) {
+			g_EnergyCount = 0;
+		}
+
+		g_GameSecondsPassed++;
+		g_EnergyCount = g_ResourceTimer + (g_GameSecondsPassed / 60 );
+		//g_EnergyCount *= 2;
+		//Single digits were being stretched to Rect width, so resize here
+		if (g_EnergyCount > 9)
+			resourceCounterText2.setWidth(25);
+		else 
+			resourceCounterText2.setWidth(15);
+
+		
+		resourceCounterText2.setText(m_Renderer, g_Font, COLOR_RED, to_string(g_EnergyCount));
+
+		if (!g_BuyTurretToggle) 
+			buyTurretButton.setText(m_Renderer, g_Font, COLOR_WHITE, "TURRET: 20");
+		else
+			buyTurretButton.setText(m_Renderer, g_Font, COLOR_RED, "TURRET: 20");
+
+		for (int i = 0; i < gridRows; i++) {
+			for (int j = 0; j < gridCols; j++) {
+				if (defaultGridData[i][j] == 1)
+					defaultHexGrid[i][j]->setTexture(m_Renderer, "Assets/turret.png");
+			}
+		}
+
+
+
+	}
     //count / FPS = Timer in seconds
 	//cout << count / FPS << endl;
 }
@@ -502,7 +679,7 @@ void Game::SortSpritesForRendering() {
 			newName = "BT_" + sprite->getSpriteName().substr(2);
 		}
 		else if (sprite->getSpriteName().substr(0, 2).find("3") != string::npos) {
-			newName = "TXT_" + sprite->getSpriteName().substr(3);
+			newName = "TXT_" + sprite->getSpriteName().substr(2);
 		}
 		else if (sprite->getSpriteName().substr(0, 2).find("1") != string::npos) {
 			newName = newName.substr(1);
@@ -517,9 +694,12 @@ void Game::Render() {
 	SDL_RenderClear(m_Renderer);
 	//////////////////////////	
 
+	//Loop through all sprites in the current scene, if its enabled, render to screen
 	for (Sprite* spriteInScene : m_CurrentScene.GetSpriteList())
 		if (spriteInScene->IsEnabled()) 
 			SDL_RenderCopy(m_Renderer, spriteInScene->getTexture(), NULL, spriteInScene->getRect());
+		
+		
 
 	/////////////////////////
 	SDL_RenderPresent(m_Renderer);
