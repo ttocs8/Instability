@@ -9,6 +9,8 @@
 #include <direct.h>
 #include <map> 
 #include <algorithm>
+#include <numeric>
+#include <mutex>
 
 using namespace std;
 
@@ -23,7 +25,7 @@ class Game {
 
 public:
 	Game();
-
+	int GLOBAL_TIMER_SECONDS = 0;
 	int init(const char* title, int xpos, int ypos, int width, int height, bool isFullscreen);
 
 	void HandleEvents();
@@ -39,7 +41,7 @@ public:
 	~Game();
 
 private:
-	int count = 0;
+	
 	bool IS_RUNNING_MAIN = false;
 	SDL_Window *m_mainWindow = NULL;
 	SDL_Renderer* m_Renderer = NULL;
@@ -53,6 +55,8 @@ private:
 	void SetUpGameplayGrid();
 	void ClickOnSprite(SDL_Event& theEvent, vector<Sprite*> theClickableSprites);
 	void HoverOverSprite(SDL_Event& theEvent, vector<Sprite*> theHoverableSprites);
+	void UpdateGridSprites();
+	void ResetGridPosition();
 	void GoToNextScene(string theButtonClicked);
 	void SortSpritesForRendering();
 

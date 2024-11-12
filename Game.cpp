@@ -30,7 +30,12 @@ Sprite resourceCounterText;
 Sprite resourceCounterText2;
 const int gridRows = 4;
 const int gridCols = 9;
+struct CoordPair {
+	int X;
+	int Y;
+};
 Sprite* defaultHexGrid[gridRows][gridCols]{};
+CoordPair defaultGridDataCoords[gridRows][gridCols];
 int defaultGridData[gridRows][gridCols]
 {
 	{0,0,0,0,0,0,0,0,0},
@@ -38,10 +43,13 @@ int defaultGridData[gridRows][gridCols]
 	{0,0,0,0,0,0,0,0,0},
 	{0,0,0,0,0,0,0,0,0}
 };
+
+
 bool g_BuyTurretToggle = false;
 bool g_BuyWallToggle = false;
 bool g_BuyFactoryToggle = false;
-
+int numFactories = 0;
+SDL_TimerID timerID = 0;
 
 TTF_Font* g_Font;
 
@@ -50,7 +58,7 @@ map< string, map<string, vector<string> > > g_SettingsFileMap;
 
 int g_ResourceTimer = 0;
 int g_EnergyCount = 0;
-int g_GameSecondsPassed = 0;
+int g_GameplayFrameCounter = 0;
 
 Game::Game() {
 	m_GameDataFolder = SDL_GetPrefPath(ORG_NAME, APP_NAME);
@@ -175,7 +183,7 @@ int Game::init(
 
 	int w = width;
 	int h = height;
-	if (SDL_Init(SDL_INIT_EVERYTHING) == 0) {
+	if (SDL_Init(SDL_INIT_EVERYTHING | SDL_INIT_TIMER) == 0) {
 		
 		if (width == -1 || height == -1) {
 			if (isFirstTimeInit || g_SettingsFileMap.empty()) {
@@ -237,7 +245,7 @@ int Game::init(
 	bg1.Create(m_Renderer, "Assets/menubackground4.png", -1, -1, 0, 0, "BG_BACKGROUND");
 	titleCard.Create(m_Renderer, "Assets/titlecard2.png", -1, -1, RENDER_RESOLUTION_W / 2, RENDER_RESOLUTION_H / 2, "TitleCard", true);
 	tempPlayButton.Create(m_Renderer, "Assets/tempplay.png", -1, -1, RENDER_RESOLUTION_W / 2, RENDER_RESOLUTION_H / 2, "BT_PlayButton", true, 0, 25);
-	tempQuitButton.Create(m_Renderer, "Assets/tempquit.png", -1, -1, RENDER_RESOLUTION_W / 2, RENDER_RESOLUTION_H / 2, "BT_QuitButton", true, 0, 125);
+	tempQuitButton.Create(m_Renderer, "Assets/tempquit.png", -1, -1, RENDER_RESOLUTION_W / 2, RENDER_RESOLUTION_H / 2, "BT_QuitButton", true, 0, 75);
 	tempOptionsButton.Create(m_Renderer, "Assets/tempoptions.png", -1, -1, RENDER_RESOLUTION_W - 75, 25, "BT_OptionsCogwheel");
 	sc_MainMenu.AddSpritesToList({ &bg1, &titleCard, &tempPlayButton, &tempQuitButton, &tempOptionsButton });
 	sc_MainMenu.SetName(SCENE_PREFIX "MainMenu");
@@ -272,6 +280,41 @@ int Game::init(
 	return 0;
 }
 
+void Game::UpdateGridSprites()
+{
+	for (int i = 0; i < gridRows; i++) {
+		for (int j = 0; j < gridCols; j++) {
+			if (defaultGridData[i][j] == 0)
+				defaultHexGrid[i][j]->setTexture(m_Renderer, "Assets/temphex.png");
+			else if (defaultGridData[i][j] == 1)
+				defaultHexGrid[i][j]->setTexture(m_Renderer, "Assets/turret.png");
+			else if (defaultGridData[i][j] == 2)
+				defaultHexGrid[i][j]->setTexture(m_Renderer, "Assets/wall.png");
+			else if (defaultGridData[i][j] == 3) 
+				defaultHexGrid[i][j]->setTexture(m_Renderer, "Assets/factory.png");
+		}
+	}
+}
+
+void Game::ResetGridPosition()
+{
+	for (int i = 0; i < gridRows; i++) {
+		for (int j = 0; j < gridCols; j++) {
+			int currentX = defaultHexGrid[i][j]->getRect()->x;
+			int currentY = defaultHexGrid[i][j]->getRect()->y;
+			int defaultX = defaultGridDataCoords[i][j].X;
+			int defaultY = defaultGridDataCoords[i][j].Y;
+
+			if (currentY != defaultY )
+				defaultHexGrid[i][j]->setYPos(defaultY);
+
+			if (currentX != defaultX)
+				defaultHexGrid[i][j]->setXPos(defaultX);
+		}
+	}
+
+}
+
 
 void Game::GoToNextScene(string theButtonClicked) {
 
@@ -291,7 +334,9 @@ void Game::GoToNextScene(string theButtonClicked) {
 			g_BuyTurretToggle = false;
 			g_BuyWallToggle = false;
 			g_BuyFactoryToggle = false;
-			g_GameSecondsPassed = 0;
+			g_GameplayFrameCounter = 0;
+			numFactories = 0;
+			UpdateGridSprites();
 			m_CurrentScene.m_SceneEnum = 2;
 		}
 	}
@@ -338,12 +383,13 @@ void Game::SetUpGameplayGrid()
 		for (int j = 0; j < gridCols; j++) {
 			string nodeName = "Hexagon [ " + to_string(i) + " , " + to_string(j) + " ]";
 			defaultHexGrid[i][j] = new Sprite(m_Renderer, "Assets/temphex.png", hexWidth, hexHeight, gridXPos + (j * (hexWidth - (hexHeight/6) + 12)) - 50, gridYPos + (i *  (hexHeight + 14)), nodeName.c_str());
-
+			
 			//offset the Y of every other column
 			if (j % 2 == 0) {
 				defaultHexGrid[i][j]->setYPos((defaultHexGrid[i][j]->getRect()->y + (defaultHexGrid[i][j]->getRect()->h) / 2)+2);
 			}
-
+			defaultGridDataCoords[i][j].X = defaultHexGrid[i][j]->getRect()->x;
+			defaultGridDataCoords[i][j].Y = defaultHexGrid[i][j]->getRect()->y;
 			sc_GameplayScene.AddSpriteToList(defaultHexGrid[i][j]);
 		}
 	}
@@ -373,6 +419,18 @@ vector<int> getHexGridIndex(string str)
 	}
 
 	return foundInds;
+}
+mutex mtx;
+Uint32 hexagon_wiggle_feedback(Uint32 interval, void* param)
+{
+	mtx.lock();
+	Sprite* param1 = reinterpret_cast<Sprite*>(param);
+
+	int currentYpos = param1->getRect()->y;
+	param1->setYPos(currentYpos - 1);
+
+	mtx.unlock();
+	return 0;
 }
 
 void Game::ClickOnSprite(SDL_Event& theEvent, vector<Sprite*> theClickableSprites)
@@ -421,9 +479,9 @@ void Game::ClickOnSprite(SDL_Event& theEvent, vector<Sprite*> theClickableSprite
 					SetUpGameplayGrid();
 				}
 
-				buyTurretButton.setText(m_Renderer, g_Font, COLOR_WHITE, "TURRET: 20");
-				buyWallButton.setText(m_Renderer, g_Font, COLOR_WHITE, "WALL: 10");
-				buyFactoryButton.setText(m_Renderer, g_Font, COLOR_WHITE, "FACTORY: 30");
+				buyTurretButton.setText(m_Renderer, g_Font, COLOR_WHITE, "TURRET: " + to_string(TURRET_COST));
+				buyWallButton.setText(m_Renderer, g_Font, COLOR_WHITE, "WALL: " + to_string(WALL_COST));
+				buyFactoryButton.setText(m_Renderer, g_Font, COLOR_WHITE, "FACTORY: " + to_string(FACTORY_COST));
 				
 
 
@@ -445,44 +503,52 @@ void Game::ClickOnSprite(SDL_Event& theEvent, vector<Sprite*> theClickableSprite
 				IS_RUNNING_MAIN = false;
 			}
 			else if (currentSpriteName.find("Hexagon") != string::npos && spriteToCheck->IsEnabled()) {
+				SDL_RemoveTimer(timerID);
+
+				buyTurretButton.setText(m_Renderer, g_Font, COLOR_WHITE, "TURRET: " + to_string(TURRET_COST));
+				buyWallButton.setText(m_Renderer, g_Font, COLOR_WHITE, "WALL: " + to_string(WALL_COST));
+				buyFactoryButton.setText(m_Renderer, g_Font, COLOR_WHITE, "FACTORY: " + to_string(FACTORY_COST));
+
 				cout << "Clicked on " << currentSpriteName << endl;
 				vector<int> inds = getHexGridIndex(currentSpriteName);
 				int row = inds.at(0);
 				int col = inds.at(1);
 
+				int currentYpos = spriteToCheck->getRect()->y;
+				spriteToCheck->setYPos(currentYpos + 1);
+				
+				timerID = SDL_AddTimer(105, hexagon_wiggle_feedback, spriteToCheck);
+
 				//Turret buying
 				if (g_BuyTurretToggle) {
 					if (g_EnergyCount >= TURRET_COST && defaultGridData[row][col] == 0) {
-						g_ResourceTimer -= TURRET_COST;
+						g_EnergyCount -= TURRET_COST;
 						defaultGridData[row][col] = 1;
 					}
 
 					g_BuyTurretToggle = false;
 				}
+				//Wall Buying
 				else if (g_BuyWallToggle) {
 					if (g_EnergyCount >= WALL_COST && defaultGridData[row][col] == 0) {
-						g_ResourceTimer -= WALL_COST;
+						g_EnergyCount -= WALL_COST;
 						defaultGridData[row][col] = 2;
 					}
 
 					g_BuyWallToggle = false;
 				}
+				//Factory Buying
 				else if (g_BuyFactoryToggle) {
-					if (g_EnergyCount >= WALL_COST && defaultGridData[row][col] == 0) {
-						g_ResourceTimer -= WALL_COST;
+					if (g_EnergyCount >= FACTORY_COST && defaultGridData[row][col] == 0) {
+						g_EnergyCount -= FACTORY_COST;
 						defaultGridData[row][col] = 3;
+						numFactories++;
 					}
 
 					g_BuyFactoryToggle = false;
 				}
 
-				//
-
-			/*	int currentYpos = spriteToCheck->getRect()->y;
-				spriteToCheck->setYPos(currentYpos + 1);*/
-				
-				cout << g_EnergyCount << endl;
-
+				UpdateGridSprites();
 			}
 			else if (currentSpriteName.find(BUTTON_PREFIX "BackToMenu") != string::npos && spriteToCheck->IsEnabled()) {
 				cout << "Clicked on Leave Game" << endl;
@@ -493,46 +559,51 @@ void Game::ClickOnSprite(SDL_Event& theEvent, vector<Sprite*> theClickableSprite
 				cout << "Clicked on BUY TURRET" << endl;
 				g_BuyWallToggle = false;
 				g_BuyFactoryToggle = false;
+				buyWallButton.setText(m_Renderer, g_Font, COLOR_WHITE, "WALL: " + to_string(WALL_COST));
+				buyFactoryButton.setText(m_Renderer, g_Font, COLOR_WHITE, "FACTORY: " + to_string(FACTORY_COST));
 
-				if (g_BuyTurretToggle)
+				if (g_BuyTurretToggle) {
 					g_BuyTurretToggle = false;
-				else 
+					buyTurretButton.setText(m_Renderer, g_Font, COLOR_WHITE, "TURRET: " + to_string(TURRET_COST));
+				}
+				else {
 					g_BuyTurretToggle = true;
+					buyTurretButton.setText(m_Renderer, g_Font, COLOR_RED, "TURRET: " + to_string(TURRET_COST));
+				}
 				
 			}
 			else if (currentSpriteName.find(TEXT_PREFIX "BuyWall") != string::npos && spriteToCheck->IsEnabled()) {
 				cout << "Clicked on BUY WALL" << endl;
 				g_BuyTurretToggle = false;
 				g_BuyFactoryToggle = false;
+				buyTurretButton.setText(m_Renderer, g_Font, COLOR_WHITE, "TURRET: " + to_string(TURRET_COST));
+				buyFactoryButton.setText(m_Renderer, g_Font, COLOR_WHITE, "FACTORY: " + to_string(FACTORY_COST));
 
-				if (g_BuyWallToggle) 
+				if (g_BuyWallToggle) {
 					g_BuyWallToggle = false;
-				else
+					buyWallButton.setText(m_Renderer, g_Font, COLOR_WHITE, "WALL: " + to_string(WALL_COST));
+				}
+				else {
 					g_BuyWallToggle = true;
-			
+					buyWallButton.setText(m_Renderer, g_Font, COLOR_RED, "WALL: " + to_string(WALL_COST));
+				}
 			}
 			else if (currentSpriteName.find(TEXT_PREFIX "BuyFactory") != string::npos && spriteToCheck->IsEnabled()) {
 				cout << "Clicked on BUY FACTORY" << endl;
 				g_BuyWallToggle = false;
 				g_BuyTurretToggle = false;
+				buyTurretButton.setText(m_Renderer, g_Font, COLOR_WHITE, "TURRET: " + to_string(TURRET_COST));
+				buyWallButton.setText(m_Renderer, g_Font, COLOR_WHITE, "WALL: " + to_string(WALL_COST));
 
-				if (g_BuyFactoryToggle) 
+				if (g_BuyFactoryToggle) {
 					g_BuyFactoryToggle = false;
-				else
+					buyFactoryButton.setText(m_Renderer, g_Font, COLOR_WHITE, "FACTORY: " + to_string(FACTORY_COST));
+				}
+				else {
 					g_BuyFactoryToggle = true;
+					buyFactoryButton.setText(m_Renderer, g_Font, COLOR_RED, "FACTORY: " + to_string(FACTORY_COST));
+				}
 
-			}
-		}
-		else if (SDL_PointInRect(&mousePosition, spriteToCheck->getRect()) && theEvent.type == SDL_MOUSEBUTTONUP)
-		{
-			string currentSpriteName = spriteToCheck->getSpriteName();
-			if (currentSpriteName.find("Hexagon") != string::npos && spriteToCheck->IsEnabled()) {
-				/*int currentYpos = spriteToCheck->getRect()->y;
-				spriteToCheck->setYPos(currentYpos - 1);*/
-				/*vector<int> inds = getHexGridIndex(currentSpriteName);
-				int row = inds.at(0);
-				int col = inds.at(1);
-				defaultGridData[row][col] = 0;*/
 			}
 		}
 	}
@@ -635,8 +706,6 @@ void Game::HandleEvents() {
 }
 
 void Game::Update() {
-	count++;
-	
 
 	//0 - main menu
 	//1 - options menu
@@ -645,55 +714,19 @@ void Game::Update() {
 		if (g_EnergyCount < 0) {
 			g_EnergyCount = 0;
 		}
+		//cout << numFactories << endl;
+		string strEnergyCount = to_string(g_EnergyCount);
+		resourceCounterText2.setText(m_Renderer, g_Font, COLOR_RED, strEnergyCount);
 
-		g_GameSecondsPassed++;
-		g_EnergyCount = (g_ResourceTimer + (g_GameSecondsPassed / 60 )) + 98;
-		//g_EnergyCount *= 2;
-		//Single digits were being stretched to Rect width, so resize here
-		if (g_EnergyCount > 99)
-			resourceCounterText2.setWidth(35);
-		else if(g_EnergyCount <= 99 && g_EnergyCount > 9)
-			resourceCounterText2.setWidth(25);
-		else
-			resourceCounterText2.setWidth(15);
+		g_GameplayFrameCounter++;
+		if (g_GameplayFrameCounter % 60 == 0)
+			g_EnergyCount += numFactories + 1;
+			
+		//Check and/or reset hexagon positions every 45 frames ( 3/4 of a second)
+		if (g_GameplayFrameCounter % 45 == 0)
+			ResetGridPosition();
 
-
-		
-		resourceCounterText2.setText(m_Renderer, g_Font, COLOR_RED, to_string(g_EnergyCount));
-
-		if (!g_BuyTurretToggle) 
-			buyTurretButton.setText(m_Renderer, g_Font, COLOR_WHITE, "TURRET: 20");
-		else
-			buyTurretButton.setText(m_Renderer, g_Font, COLOR_RED, "TURRET: 20");
-
-		if (!g_BuyWallToggle)
-			buyWallButton.setText(m_Renderer, g_Font, COLOR_WHITE, "WALL: 10");
-		else
-			buyWallButton.setText(m_Renderer, g_Font, COLOR_RED, "WALL: 10");
-
-		if (!g_BuyFactoryToggle)
-			buyFactoryButton.setText(m_Renderer, g_Font, COLOR_WHITE, "FACTORY: 30");
-		else
-			buyFactoryButton.setText(m_Renderer, g_Font, COLOR_RED, "FACTORY: 30");
-
-		for (int i = 0; i < gridRows; i++) {
-			for (int j = 0; j < gridCols; j++) {
-				if (defaultGridData[i][j] == 0)
-					defaultHexGrid[i][j]->setTexture(m_Renderer, "Assets/temphex.png");
-				else if (defaultGridData[i][j] == 1)
-					defaultHexGrid[i][j]->setTexture(m_Renderer, "Assets/turret.png");
-				else if(defaultGridData[i][j] == 2)
-					defaultHexGrid[i][j]->setTexture(m_Renderer, "Assets/wall.png");
-				else if (defaultGridData[i][j] == 3)
-					defaultHexGrid[i][j]->setTexture(m_Renderer, "Assets/factory.png");
-				
-					
-			}
-		}
-
-
-
-	}
+	} 
     //count / FPS = Timer in seconds
 	//cout << count / FPS << endl;
 }
@@ -769,7 +802,6 @@ void Game::Render() {
 	for (Sprite* spriteInScene : m_CurrentScene.GetSpriteList())
 		if (spriteInScene->IsEnabled()) 
 			SDL_RenderCopy(m_Renderer, spriteInScene->getTexture(), NULL, spriteInScene->getRect());
-		
 		
 
 	/////////////////////////

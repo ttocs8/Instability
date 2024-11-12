@@ -81,6 +81,8 @@ void Sprite::setSpriteName(const char* theName) {
 void Sprite::setText(SDL_Renderer* theRenderer, TTF_Font* theFont, SDL_Color theColor, string theMessage) {
 	m_Color = theColor;
 	SDL_Surface* tempSurface = TTF_RenderText_Solid(theFont, theMessage.c_str(), theColor);
+	m_Rect->w = tempSurface->w;
+	m_Rect->h = tempSurface->h;
 	m_Texture = SDL_CreateTextureFromSurface(theRenderer, tempSurface);
 	SDL_FreeSurface(tempSurface);
 }

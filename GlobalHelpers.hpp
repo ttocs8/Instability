@@ -1,6 +1,7 @@
 #include <SDL_platform.h>
 #include "SDL_ttf.h"
 #include <string>
+#include <iostream>
 #ifdef _WIN32
 #include <io.h> 
 #define access    _access_s
@@ -48,8 +49,10 @@
 #define WALL_COST 10
 #define FACTORY_COST 30
 
+typedef Uint32(*SDL_NewTimerCallback) (Uint32 interval, void* param);
+
 class GlobalHelpers {
 public:
 	static std::string GetOSSeparator();
-	static bool FileExists(const std::string& Filename);
+	static bool FileExists(const std::string& Filename); 
 };
