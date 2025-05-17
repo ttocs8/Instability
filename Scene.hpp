@@ -13,6 +13,7 @@ public:
 	void AddSpriteToList(Sprite* theSprite);
 	void AddSpritesToList(std::vector<Sprite*> theSprites);
 	std::vector<Sprite*> GetSpriteList() { return m_ListOfSprites; };
+	Sprite* GetSprite(std::string theSpriteName);
 	string GetName() { return  m_SceneName; }
 	void SetName(std::string theName) { m_SceneName = theName; }
 	void EnableAllSprites();

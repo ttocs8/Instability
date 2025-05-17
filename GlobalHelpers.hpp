@@ -45,9 +45,24 @@
 
 
 //Gameplay Constants
-#define TURRET_COST 20
-#define WALL_COST 10
-#define FACTORY_COST 30
+#define TURRET_COST 2
+#define WALL_COST 2
+#define FACTORY_COST 2
+
+#define TURRET_DEFAULT 1
+#define TURRET_UPGRADE1 2
+#define TURRET_UPGRADE2 3
+
+#define WALL_DEFAULT 4
+#define WALL_UPGRADE1 5
+#define WALL_UPGRADE2 6
+
+#define FACTORY_DEFAULT 7
+#define FACTORY_UPGRADE1 8
+#define FACTORY_UPGRADE2 9
+
+#define hexWidth 30
+#define hexHeight 30
 
 typedef Uint32(*SDL_NewTimerCallback) (Uint32 interval, void* param);
 

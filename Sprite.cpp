@@ -20,8 +20,10 @@ Sprite::Sprite(SDL_Renderer* theRenderer, const char* theFullPathToImage, int w,
 Sprite::~Sprite(){}
 
 void Sprite::Create(SDL_Renderer* theRenderer, const char* theFullPathToImage, int w, int h, int x, int y, const char* theName, bool isScreenCentered, int xOffset, int yOffset) {
-	if(w != -1 || h != -1)
-		setDimenstions(w, h);
+
+
+	setDimenstions(w, h);
+
 	if(theFullPathToImage != NULL)
 		setTexture(theRenderer, theFullPathToImage);
 	if (isScreenCentered) {
@@ -35,6 +37,8 @@ void Sprite::Create(SDL_Renderer* theRenderer, const char* theFullPathToImage, i
 	
 	setSpriteName(theName);
 	m_IsEnabled = true;
+
+	
 }
 
 void Sprite::setTexture(SDL_Renderer* theRenderer, const char* theFullPathToImage ) {

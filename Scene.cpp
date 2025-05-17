@@ -31,3 +31,12 @@ void Scene::DisableAllSprites() {
 		sprite->Disable();
 }
 
+Sprite* Scene::GetSprite(std::string theSpriteName) {
+	for (Sprite* sprite : m_ListOfSprites)
+		if (sprite->getSpriteName().find(theSpriteName) != std::string::npos)
+			return sprite;
+
+	return 0;
+}
+
+

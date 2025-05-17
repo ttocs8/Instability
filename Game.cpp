@@ -242,7 +242,7 @@ int Game::init(
 	TTF_Init();
 
 	//Create Main Menu sprites
-	bg1.Create(m_Renderer, "Assets/menubackground4.png", -1, -1, 0, 0, "BG_BACKGROUND");
+	bg1.Create(m_Renderer, "Assets/menubackground5.png", -1, -1, 0, 0, "BG_BACKGROUND");
 	titleCard.Create(m_Renderer, "Assets/titlecard2.png", -1, -1, RENDER_RESOLUTION_W / 2, RENDER_RESOLUTION_H / 2, "TitleCard", true);
 	tempPlayButton.Create(m_Renderer, "Assets/tempplay.png", -1, -1, RENDER_RESOLUTION_W / 2, RENDER_RESOLUTION_H / 2, "BT_PlayButton", true, 0, 25);
 	tempQuitButton.Create(m_Renderer, "Assets/tempquit.png", -1, -1, RENDER_RESOLUTION_W / 2, RENDER_RESOLUTION_H / 2, "BT_QuitButton", true, 0, 75);
@@ -252,7 +252,7 @@ int Game::init(
 
 
 	//Create Options Menu Sprites
-	bg2.Create(m_Renderer, "Assets/menubackground4.png", -1, -1, 0, 0, "BG_BACKGROUND2");
+	bg2.Create(m_Renderer, "Assets/menubackground5.png", -1, -1, 0, 0, "BG_BACKGROUND2");
 	tempOptionsButton2.Create(m_Renderer, "Assets/tempoptions2.png", -1, -1, RENDER_RESOLUTION_W - 75, 25, "BT_ExitOptns");
 
 	sc_OptionsMenu.SetName(SCENE_PREFIX "OptionsMenu");
@@ -280,18 +280,22 @@ int Game::init(
 	return 0;
 }
 
-void Game::UpdateGridSprites()
+void Game::UpdateGrid()
 {
 	for (int i = 0; i < gridRows; i++) {
 		for (int j = 0; j < gridCols; j++) {
-			if (defaultGridData[i][j] == 0)
+			if (defaultGridData[i][j] == 0) {
 				defaultHexGrid[i][j]->setTexture(m_Renderer, "Assets/temphex.png");
-			else if (defaultGridData[i][j] == 1)
+			}
+			else if (defaultGridData[i][j] == TURRET_DEFAULT) {
 				defaultHexGrid[i][j]->setTexture(m_Renderer, "Assets/turret.png");
-			else if (defaultGridData[i][j] == 2)
+			}
+			else if (defaultGridData[i][j] == WALL_DEFAULT) {
 				defaultHexGrid[i][j]->setTexture(m_Renderer, "Assets/wall.png");
-			else if (defaultGridData[i][j] == 3) 
+			}
+			else if (defaultGridData[i][j] == FACTORY_DEFAULT) {
 				defaultHexGrid[i][j]->setTexture(m_Renderer, "Assets/factory.png");
+			}
 		}
 	}
 }
@@ -336,7 +340,7 @@ void Game::GoToNextScene(string theButtonClicked) {
 			g_BuyFactoryToggle = false;
 			g_GameplayFrameCounter = 0;
 			numFactories = 0;
-			UpdateGridSprites();
+			UpdateGrid();
 			m_CurrentScene.m_SceneEnum = 2;
 		}
 	}
@@ -371,12 +375,10 @@ void Game::SetResolution(int w, int h) {
 
 void Game::SetUpGameplayGrid()
 {
-	int hexWidth = 30; //45
-	int hexHeight = 30; //41
-
+	
 	//CENTERED
 	int gridXPos = (RENDER_RESOLUTION_W / 2) - ( (gridCols * hexWidth) / 2);
-	int gridYPos = (RENDER_RESOLUTION_H / 2) - ( (gridRows * hexHeight) / 2);;
+	int gridYPos = (RENDER_RESOLUTION_H / 2) - ( (gridRows * hexHeight) / 2);
 
 
 	for (int i = 0; i < gridRows; i++) {
@@ -390,7 +392,7 @@ void Game::SetUpGameplayGrid()
 			}
 			defaultGridDataCoords[i][j].X = defaultHexGrid[i][j]->getRect()->x;
 			defaultGridDataCoords[i][j].Y = defaultHexGrid[i][j]->getRect()->y;
-			sc_GameplayScene.AddSpriteToList(defaultHexGrid[i][j]);
+			sc_GameplayScene.AddSpriteToList(defaultHexGrid[i][j]);			
 		}
 	}
 
@@ -523,7 +525,7 @@ void Game::ClickOnSprite(SDL_Event& theEvent, vector<Sprite*> theClickableSprite
 				if (g_BuyTurretToggle) {
 					if (g_EnergyCount >= TURRET_COST && defaultGridData[row][col] == 0) {
 						g_EnergyCount -= TURRET_COST;
-						defaultGridData[row][col] = 1;
+						defaultGridData[row][col] = TURRET_DEFAULT;
 					}
 
 					g_BuyTurretToggle = false;
@@ -532,7 +534,7 @@ void Game::ClickOnSprite(SDL_Event& theEvent, vector<Sprite*> theClickableSprite
 				else if (g_BuyWallToggle) {
 					if (g_EnergyCount >= WALL_COST && defaultGridData[row][col] == 0) {
 						g_EnergyCount -= WALL_COST;
-						defaultGridData[row][col] = 2;
+						defaultGridData[row][col] = WALL_DEFAULT;
 					}
 
 					g_BuyWallToggle = false;
@@ -541,14 +543,14 @@ void Game::ClickOnSprite(SDL_Event& theEvent, vector<Sprite*> theClickableSprite
 				else if (g_BuyFactoryToggle) {
 					if (g_EnergyCount >= FACTORY_COST && defaultGridData[row][col] == 0) {
 						g_EnergyCount -= FACTORY_COST;
-						defaultGridData[row][col] = 3;
+						defaultGridData[row][col] = FACTORY_DEFAULT;
 						numFactories++;
 					}
 
 					g_BuyFactoryToggle = false;
 				}
 
-				UpdateGridSprites();
+				UpdateGrid();
 			}
 			else if (currentSpriteName.find(BUTTON_PREFIX "BackToMenu") != string::npos && spriteToCheck->IsEnabled()) {
 				cout << "Clicked on Leave Game" << endl;
@@ -719,10 +721,35 @@ void Game::Update() {
 		resourceCounterText2.setText(m_Renderer, g_Font, COLOR_RED, strEnergyCount);
 
 		g_GameplayFrameCounter++;
-		if (g_GameplayFrameCounter % 60 == 0)
+		if (g_GameplayFrameCounter % 60 == 0) {
+
+			//update Energy count (per second)
 			g_EnergyCount += numFactories + 1;
+
+
+			for (int i = 0; i < gridRows; i++) {
+				for (int j = 0; j < gridCols; j++) {
+					if (defaultGridData[i][j] == TURRET_DEFAULT) {
+
+						//spawn bullet
+						std::string name = "friendlyTurretSprite" + to_string(g_GameplayFrameCounter % 60);
+						Sprite* friendlyTurretLaser = new Sprite(m_Renderer, "Assets/friendly_laser.png", -1, -1, defaultGridDataCoords[i][j].X + 20, defaultGridDataCoords[i][j].Y, name.c_str());
+						m_CurrentScene.AddSpriteToList(friendlyTurretLaser);
+					}
+				}
+			}
+		}
+
+		//Move bullets per frame
+		for (Sprite* sprite : m_CurrentScene.GetSpriteList()) {
+			if (sprite->getSpriteName().find("friendlyTurretSprite") != std::string::npos) {
+				sprite->setYPos(sprite->getRect()->y - 5);
+			}
+		}
+
+		
 			
-		//Check and/or reset hexagon positions every 45 frames ( 3/4 of a second)
+		//Check and/or reset hexagon positions every 45 frames ( 3/4 of a second )
 		if (g_GameplayFrameCounter % 45 == 0)
 			ResetGridPosition();
 

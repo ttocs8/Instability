@@ -55,7 +55,7 @@ private:
 	void SetUpGameplayGrid();
 	void ClickOnSprite(SDL_Event& theEvent, vector<Sprite*> theClickableSprites);
 	void HoverOverSprite(SDL_Event& theEvent, vector<Sprite*> theHoverableSprites);
-	void UpdateGridSprites();
+	void UpdateGrid();
 	void ResetGridPosition();
 	void GoToNextScene(string theButtonClicked);
 	void SortSpritesForRendering();
