@@ -61,7 +61,7 @@ private:
 	void GoToNextScene(string theButtonClicked);
 	void SortSpritesForRendering();
 	void DestroyAllSpritesOfName(string spriteName);
-	void RemoveSpriteFromList(Sprite* spriteToRemove);
+	void RemoveSpriteFromRenderingList(Sprite* spriteToRemove);
 
 
 };

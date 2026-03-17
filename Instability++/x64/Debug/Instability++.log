@@ -1,7 +1,3 @@
 ﻿  Game.cpp
-C:\Users\hunts\Desktop\Desktop Folders\C++ Game\Instability++\Instability\Game.cpp(948,8): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
-  Sprite.cpp
-  main.cpp
-C:\Users\hunts\Desktop\Desktop Folders\C++ Game\Instability++\Instability\main.cpp(21,14): warning C4244: 'initializing': conversion from 'Uint64' to 'Uint32', possible loss of data
-  Generating Code...
+C:\Users\hunts\Desktop\Desktop Folders\C++ Game\Instability++\Instability\Game.cpp(928,8): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
   Instability++.vcxproj -> C:\Users\hunts\Desktop\Desktop Folders\C++ Game\Instability++\Instability\x64\Debug\Instability++.exe

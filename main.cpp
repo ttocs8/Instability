@@ -5,7 +5,7 @@ int frameCount = 0;
 
 int main(int argc, char* argv[]) {
 
-	const int frameDelay = 1000 / FPS;
+	//const int frameDelay = 1000 / FPS;
 
 	Uint32 lastFrameTime = 0;
 	float deltaTime = 0.0f;
@@ -29,7 +29,6 @@ int main(int argc, char* argv[]) {
 		s_Game->Update(deltaTime);
 		s_Game->Render();
 
-		// Print FPS every second
 		timer += deltaTime;
 		frameCount++;
 

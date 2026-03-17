@@ -47,26 +47,29 @@ int defaultGridData[gridRows][gridCols]
 };
 
 
-bool g_BuyTurretToggle = false;
-bool g_BuyWallToggle = false;
-bool g_BuyFactoryToggle = false;
-bool g_UpgradeToggle = false;
-int numFactories = 0;
-int numUpgradedFactories = 0;
-SDL_TimerID timerID = 0;
+
 
 TTF_Font* g_Font;
 
 string g_SaveStatesFolder;
 map< string, map<string, vector<string> > > g_SettingsFileMap;
 
-float g_Energy = 0.0f;           // Current energy
-float g_EnergyPerSecond = 1.0f;  // How much energy you gain per second, 1 by default
-float g_EnergyTimer = 0.0f;      // Accumulator
 
-float g_BulletLifeTimer = 0.0f;
-float g_BulletLifetime = 0.0f;
-int g_GameplayFrameCounter = 0;
+////Gameplay
+bool g_BuyTurretToggle = false;
+bool g_BuyWallToggle = false;
+bool g_BuyFactoryToggle = false;
+bool g_UpgradeToggle = false;
+
+//timer for hexagon click wiggle feedback effect
+SDL_TimerID wiggle_timerID = 0;
+
+float g_Energy = 0.0f;           // Current total energy
+float g_EnergyPerSecond = 1.0f;  // How much energy you gain per second, 1 by default
+float g_EnergyTimer = 0.0f;      // Engergy accumulator (timer)
+
+std::vector<std::unique_ptr<Sprite>> bulletList; //bullet list for sprite rendering and cleanup
+//////
 
 Game::Game() {
 	m_GameDataFolder = SDL_GetPrefPath(ORG_NAME, APP_NAME);
@@ -362,9 +365,6 @@ void Game::GoToNextScene(string theButtonClicked) {
 			g_BuyWallToggle = false;
 			g_BuyFactoryToggle = false;
 			g_UpgradeToggle = false;
-			g_GameplayFrameCounter = 0;
-			numFactories = 0;
-			numUpgradedFactories = 0;
 			UpdateGrid();
 			m_CurrentScene.m_SceneEnum = 2;
 		}
@@ -447,6 +447,8 @@ vector<int> getHexGridIndex(string str)
 	return foundInds;
 }
 mutex mtx;
+//POSSIBLE MEMORY LEAK HERE
+//MEMORY INCREASING WITH EACH CLICK
 Uint32 hexagon_wiggle_feedback(Uint32 interval, void* param)
 {
 	mtx.lock();
@@ -533,7 +535,7 @@ void Game::ClickOnSprite(SDL_Event& theEvent, vector<Sprite*> theClickableSprite
 				IS_RUNNING_MAIN = false;
 			}
 			else if (currentSpriteName.find("Hexagon") != string::npos && spriteToCheck->IsEnabled()) {
-				SDL_RemoveTimer(timerID);
+				SDL_RemoveTimer(wiggle_timerID);
 
 
 				buyTurretButton.setText(m_Renderer, g_Font, COLOR_WHITE, "TURRET: " + to_string(TURRET_COST));
@@ -549,7 +551,7 @@ void Game::ClickOnSprite(SDL_Event& theEvent, vector<Sprite*> theClickableSprite
 				int currentYpos = spriteToCheck->getRect()->y;
 				spriteToCheck->setYPos(currentYpos + 1);
 				
-				timerID = SDL_AddTimer(105, hexagon_wiggle_feedback, spriteToCheck);
+				wiggle_timerID = SDL_AddTimer(105, hexagon_wiggle_feedback, spriteToCheck);
 
 				//Turret buying
 				if (g_BuyTurretToggle) {
@@ -788,7 +790,6 @@ void Game::HandleEvents() {
 			break;//event type
 	}
 }
-std::vector<std::unique_ptr<Sprite>> bulletList;  // own bullets separately
 
 void Game::Update(float deltaTime) {
 	//0 - main menu
@@ -798,7 +799,6 @@ void Game::Update(float deltaTime) {
 		if (g_Energy < 0) {
 			g_Energy = 0;
 		}
-		//cout << numFactories << endl;
 		if ((int)g_Energy != m_LastDisplayedEnergy) {
 			resourceCounterText2.setText(m_Renderer, g_Font, COLOR_RED, to_string((int)g_Energy));
 			m_LastDisplayedEnergy = (int)g_Energy;
@@ -856,12 +856,10 @@ void Game::Update(float deltaTime) {
 		//Doubles as the game timer - always counts up, so extra processing is done here
 		g_EnergyTimer += deltaTime;
 
-		//Timer for bullets
-		//	g_BulletLifeTimer += deltaTime;
+	
 
 		std::vector<Sprite*> spritesToRemove;
-		// Move + check off-screen EVERY FRAME
-		
+
 		// Move + check off-screen EVERY FRAME
 		for (auto it = bulletList.begin(); it != bulletList.end(); ) {
 			auto* s = it->get();
@@ -870,8 +868,9 @@ void Game::Update(float deltaTime) {
 			s->setYPos(static_cast<int>(newY));
 
 			if (newY < -50.0f) {
-				RemoveSpriteFromList(s);    // remove from rendering list
-				it = bulletList.erase(it);  // auto-deletes the Sprite
+				//remove from render list + delete from memory
+				RemoveSpriteFromRenderingList(s);    
+				it = bulletList.erase(it);  
 			}
 			else {
 				++it;
@@ -885,46 +884,27 @@ void Game::Update(float deltaTime) {
 			g_EnergyTimer -= 1.0f;
 
 
-			//Various Clean Ups////////
-			////////////////////////////
-			//TODO: somehow destroy all bullets that disappear off screen
-
-
-
+			//Reset every second, probably need a better way of doing this
+			////////////////////
 			ResetGridPosition();
 			//////////////////////
 
 
 		}
-
-		//Sprite Cleanup
-		//for (Sprite* dead : spritesToRemove)
-		//{
-		//	if (dead == nullptr) continue;  
-
-		//	dead->Destroy(); 
-
-	
-		//	RemoveSpriteFromList(dead);
-
-	
-		//	delete dead;
-		//}
-
-	} 
-    //count / FPS = Timer in seconds
-	//cout << count / FPS << endl;
+	}
 }
 
 void Game::SortSpritesForRendering() {
 	/**
-	* BG  0
-	* *   1
-	* BT  2
-	* TXT 3
+	* Higher number = topmost layer
+	* 
+	* BG (background)   0
+	* default			1
+	* BT (buttons)		2
+	* TXT (text)		3
 	*/
 
-	//replace the prefixes with numbers for sorting
+	//replace the prefixes with numbers for sorting, following the above comments rules
 	for (Sprite* sprite : m_CurrentScene.m_ListOfSprites) {
 		string newName = sprite->getSpriteName();
 		if (sprite->getSpriteName().find(BACKGROUND_PREFIX) != string::npos) {
@@ -953,7 +933,6 @@ void Game::SortSpritesForRendering() {
 		char nextChar = m_CurrentScene.m_ListOfSprites[j + 1]->m_SpriteName[0];
 
 		if (int(currentChar) > int(nextChar))
-
 			// Swapping if in the wrong order
 			swap(m_CurrentScene.m_ListOfSprites[j], m_CurrentScene.m_ListOfSprites[j + 1]);
 	}
@@ -978,23 +957,13 @@ void Game::SortSpritesForRendering() {
 	}
 
 }
-void Game::RemoveSpriteFromList(Sprite* spriteToRemove)
+void Game::RemoveSpriteFromRenderingList(Sprite* spriteToRemove)
 {
 	auto& list = m_CurrentScene.m_ListOfSprites;
 	list.erase(
 		std::remove(list.begin(), list.end(), spriteToRemove),
 		list.end()
 	);
-}
-
-void Game::DestroyAllSpritesOfName(string spriteName) {
-	for (Sprite* sprite : m_CurrentScene.GetSpriteList()) {
-		std::string name = sprite->getSpriteName();
-
-		if (name.find(spriteName.c_str()) != std::string::npos) {
-			sprite->Destroy();
-		}
-	}
 }
 
 void Game::Render() {
