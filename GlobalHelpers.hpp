@@ -42,12 +42,14 @@
 
 #define COLOR_WHITE { 255, 255, 255 }
 #define COLOR_RED { 236, 33, 40 }
+#define COLOR_PURPLE { 195, 0, 255 }
 
 
 //Gameplay Constants
 #define TURRET_COST 2
 #define WALL_COST 2
 #define FACTORY_COST 2
+#define UPGRADE_COST 3
 
 #define TURRET_DEFAULT 1
 #define TURRET_UPGRADE1 2

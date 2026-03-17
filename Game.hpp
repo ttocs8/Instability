@@ -29,7 +29,7 @@ public:
 	int init(const char* title, int xpos, int ypos, int width, int height, bool isFullscreen);
 
 	void HandleEvents();
-	void Update();
+	void Update(float deltaTime);
 	void Render();
 	void Reset();
 	void CreateInitialSaveSate();
@@ -48,6 +48,7 @@ private:
 	string m_GameDataFolder = "";
 	ScreenResolution_t m_CurrentScreenResolution;
 	Scene m_CurrentScene;
+	int m_LastDisplayedEnergy = 0;
 	bool m_IsGameplayGridSetUp = false;
 
 	void SetResolution(int w, int h);
@@ -59,6 +60,8 @@ private:
 	void ResetGridPosition();
 	void GoToNextScene(string theButtonClicked);
 	void SortSpritesForRendering();
+	void DestroyAllSpritesOfName(string spriteName);
+	void RemoveSpriteFromList(Sprite* spriteToRemove);
 
 
 };

@@ -7,9 +7,10 @@ int main(int argc, char* argv[]) {
 
 	const int frameDelay = 1000 / FPS;
 
-	Uint32 frameStart;
-	int frameTime;
-
+	Uint32 lastFrameTime = 0;
+	float deltaTime = 0.0f;
+	static float timer = 0.0f;
+	static int frameCount = 0;
 	s_Game = new Game();
 	s_Game->init("INSTABILITY", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, DEFAULT_RESOLUTION_W, DEFAULT_RESOLUTION_H, false);
 	
@@ -17,19 +18,25 @@ int main(int argc, char* argv[]) {
 	while (s_Game->IsRunning()) 
 	{
 
-		frameStart = SDL_GetTicks();
+		Uint32 now = SDL_GetTicks64();
+
+		if (lastFrameTime == 0) lastFrameTime = now;
+
+		deltaTime = (now - lastFrameTime) / 1000.0f;
+		lastFrameTime = now;
 
 		s_Game->HandleEvents();
-		s_Game->Update();
+		s_Game->Update(deltaTime);
 		s_Game->Render();
 
-		frameTime = SDL_GetTicks() - frameStart;
+		// Print FPS every second
+		timer += deltaTime;
+		frameCount++;
 
-		if (frameDelay > frameTime)
-		{
-			SDL_Delay(frameDelay - frameTime);
-			frameCount++;
-			s_Game->GLOBAL_TIMER_SECONDS = frameCount / 60;
+		if (timer >= 1.0f) {
+			//std::cout << "FPS: " << frameCount << " | deltaTime: " << deltaTime << std::endl;
+			timer = 0.0f;
+			frameCount = 0;
 		}
 	}
 

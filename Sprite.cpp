@@ -83,6 +83,10 @@ void Sprite::setSpriteName(const char* theName) {
 }
 
 void Sprite::setText(SDL_Renderer* theRenderer, TTF_Font* theFont, SDL_Color theColor, string theMessage) {
+	if (m_Texture) {
+		SDL_DestroyTexture(m_Texture);  // free old before creating new
+		m_Texture = nullptr;
+	}
 	m_Color = theColor;
 	SDL_Surface* tempSurface = TTF_RenderText_Solid(theFont, theMessage.c_str(), theColor);
 	m_Rect->w = tempSurface->w;
@@ -115,12 +119,18 @@ SDL_Rect* Sprite::getRect() {
 }
 
 void Sprite::Destroy() {
-	//LOOK AT THIS LATER FUCKO
-	//FIND A WAY TO ACTUALLY DELETE THIS FUCKER
-	m_IsEnabled = false;
-	SDL_DestroyTexture(m_Texture);
-	setDimenstions(0, 0);
-	SDL_free(&m_Rect);
+	if (m_Texture != nullptr)
+	{
+		SDL_DestroyTexture(m_Texture);
+		m_Texture = nullptr;
+	}
+
+	if (m_Rect) {
+		delete m_Rect;
+		m_Rect = nullptr;
+	}
+
+	delete this;   // <--- this is the key line for simple implementations
 }
 
 

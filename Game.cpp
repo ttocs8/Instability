@@ -1,7 +1,7 @@
 #include "Game.hpp"
 //Diable fopen warnings
 #pragma warning(disable:4996)
-
+#pragma warning(disable:6385)
 //using namespace std;
 
 
@@ -26,6 +26,8 @@ Sprite backToMenuButton;
 Sprite buyTurretButton;
 Sprite buyWallButton;
 Sprite buyFactoryButton;
+Sprite upgradeButton;
+
 Sprite resourceCounterText;
 Sprite resourceCounterText2;
 const int gridRows = 4;
@@ -48,7 +50,9 @@ int defaultGridData[gridRows][gridCols]
 bool g_BuyTurretToggle = false;
 bool g_BuyWallToggle = false;
 bool g_BuyFactoryToggle = false;
+bool g_UpgradeToggle = false;
 int numFactories = 0;
+int numUpgradedFactories = 0;
 SDL_TimerID timerID = 0;
 
 TTF_Font* g_Font;
@@ -56,8 +60,12 @@ TTF_Font* g_Font;
 string g_SaveStatesFolder;
 map< string, map<string, vector<string> > > g_SettingsFileMap;
 
-int g_ResourceTimer = 0;
-int g_EnergyCount = 0;
+float g_Energy = 0.0f;           // Current energy
+float g_EnergyPerSecond = 1.0f;  // How much energy you gain per second, 1 by default
+float g_EnergyTimer = 0.0f;      // Accumulator
+
+float g_BulletLifeTimer = 0.0f;
+float g_BulletLifetime = 0.0f;
 int g_GameplayFrameCounter = 0;
 
 Game::Game() {
@@ -227,7 +235,7 @@ int Game::init(
 			cout << "Renderer created..." << endl;
 		}
 
-		std::string pathToIcon = ASSETS_FOLDER + GlobalHelpers::GetOSSeparator() + "icon.png";
+		std::string pathToIcon = ASSETS_FOLDER + GlobalHelpers::GetOSSeparator() + "turret_upgraded.png";
 		SDL_SetWindowIcon(m_mainWindow,IMG_Load(pathToIcon.c_str()));
 
 		IS_RUNNING_MAIN = true;
@@ -284,18 +292,33 @@ void Game::UpdateGrid()
 {
 	for (int i = 0; i < gridRows; i++) {
 		for (int j = 0; j < gridCols; j++) {
-			if (defaultGridData[i][j] == 0) {
-				defaultHexGrid[i][j]->setTexture(m_Renderer, "Assets/temphex.png");
+			switch (defaultGridData[i][j]) {
+			
+				case TURRET_DEFAULT:
+					defaultHexGrid[i][j]->setTexture(m_Renderer, "Assets/turret.png");
+					break;
+				case TURRET_UPGRADE1:
+					defaultHexGrid[i][j]->setTexture(m_Renderer, "Assets/turret_upgraded.png");
+					break;
+
+				case WALL_DEFAULT:
+					defaultHexGrid[i][j]->setTexture(m_Renderer, "Assets/wall.png");
+					break;
+				case WALL_UPGRADE1:
+					defaultHexGrid[i][j]->setTexture(m_Renderer, "Assets/wall_upgraded.png");
+					break;
+
+				case FACTORY_DEFAULT:
+					defaultHexGrid[i][j]->setTexture(m_Renderer, "Assets/factory.png");
+					break;
+				case FACTORY_UPGRADE1:
+					defaultHexGrid[i][j]->setTexture(m_Renderer, "Assets/factory_upgraded.png");
+					break;
+
+				default:
+					defaultHexGrid[i][j]->setTexture(m_Renderer, "Assets/temphex.png");
 			}
-			else if (defaultGridData[i][j] == TURRET_DEFAULT) {
-				defaultHexGrid[i][j]->setTexture(m_Renderer, "Assets/turret.png");
-			}
-			else if (defaultGridData[i][j] == WALL_DEFAULT) {
-				defaultHexGrid[i][j]->setTexture(m_Renderer, "Assets/wall.png");
-			}
-			else if (defaultGridData[i][j] == FACTORY_DEFAULT) {
-				defaultHexGrid[i][j]->setTexture(m_Renderer, "Assets/factory.png");
-			}
+			
 		}
 	}
 }
@@ -338,8 +361,10 @@ void Game::GoToNextScene(string theButtonClicked) {
 			g_BuyTurretToggle = false;
 			g_BuyWallToggle = false;
 			g_BuyFactoryToggle = false;
+			g_UpgradeToggle = false;
 			g_GameplayFrameCounter = 0;
 			numFactories = 0;
+			numUpgradedFactories = 0;
 			UpdateGrid();
 			m_CurrentScene.m_SceneEnum = 2;
 		}
@@ -350,8 +375,7 @@ void Game::GoToNextScene(string theButtonClicked) {
 		m_CurrentScene.m_SceneEnum = 0;
 	}
 	else if (currentSceneName.find(SCENE_PREFIX "INSTABILITY") != string::npos && theButtonClicked.find(BUTTON_PREFIX "BackToMenu") != string::npos) {
-		g_EnergyCount = 0;
-		g_ResourceTimer = 0;
+		g_Energy = 0;
 		for (int i = 0; i < gridRows; i++) {
 			for (int j = 0; j < gridCols; j++) {
 				defaultGridData[i][j] = 0; 
@@ -468,12 +492,14 @@ void Game::ClickOnSprite(SDL_Event& theEvent, vector<Sprite*> theClickableSprite
 					buyTurretButton.Create(m_Renderer, NULL, 110, 25, RENDER_RESOLUTION_W - 150, 105, "TXT_BuyTurret");
 					buyWallButton.Create(m_Renderer, NULL, 85, 25, RENDER_RESOLUTION_W - 150, 135, "TXT_BuyWall");
 					buyFactoryButton.Create(m_Renderer, NULL, 120, 25, RENDER_RESOLUTION_W - 150, 165, "TXT_BuyFactory");
+					upgradeButton.Create(m_Renderer, NULL, 110, 25, RENDER_RESOLUTION_W - 150, 205, "TXT_Upgrade");
 
 					sc_GameplayScene.AddSpriteToList(&resourceCounterText);
 					sc_GameplayScene.AddSpriteToList(&resourceCounterText2);
 					sc_GameplayScene.AddSpriteToList(&buyTurretButton);
 					sc_GameplayScene.AddSpriteToList(&buyWallButton);
 					sc_GameplayScene.AddSpriteToList(&buyFactoryButton);
+					sc_GameplayScene.AddSpriteToList(&upgradeButton);
 
 					//Set up the grid
 					// FOR NOW it is a 9x4 grid of hexagons
@@ -484,6 +510,8 @@ void Game::ClickOnSprite(SDL_Event& theEvent, vector<Sprite*> theClickableSprite
 				buyTurretButton.setText(m_Renderer, g_Font, COLOR_WHITE, "TURRET: " + to_string(TURRET_COST));
 				buyWallButton.setText(m_Renderer, g_Font, COLOR_WHITE, "WALL: " + to_string(WALL_COST));
 				buyFactoryButton.setText(m_Renderer, g_Font, COLOR_WHITE, "FACTORY: " + to_string(FACTORY_COST));
+				upgradeButton.setText(m_Renderer, g_Font, COLOR_WHITE, "UPGRADE");
+
 				
 
 
@@ -507,9 +535,11 @@ void Game::ClickOnSprite(SDL_Event& theEvent, vector<Sprite*> theClickableSprite
 			else if (currentSpriteName.find("Hexagon") != string::npos && spriteToCheck->IsEnabled()) {
 				SDL_RemoveTimer(timerID);
 
+
 				buyTurretButton.setText(m_Renderer, g_Font, COLOR_WHITE, "TURRET: " + to_string(TURRET_COST));
 				buyWallButton.setText(m_Renderer, g_Font, COLOR_WHITE, "WALL: " + to_string(WALL_COST));
 				buyFactoryButton.setText(m_Renderer, g_Font, COLOR_WHITE, "FACTORY: " + to_string(FACTORY_COST));
+				upgradeButton.setText(m_Renderer, g_Font, COLOR_WHITE, "UPGRADE");
 
 				cout << "Clicked on " << currentSpriteName << endl;
 				vector<int> inds = getHexGridIndex(currentSpriteName);
@@ -523,8 +553,8 @@ void Game::ClickOnSprite(SDL_Event& theEvent, vector<Sprite*> theClickableSprite
 
 				//Turret buying
 				if (g_BuyTurretToggle) {
-					if (g_EnergyCount >= TURRET_COST && defaultGridData[row][col] == 0) {
-						g_EnergyCount -= TURRET_COST;
+					if (g_Energy >= TURRET_COST && defaultGridData[row][col] == 0) {
+						g_Energy -= TURRET_COST;
 						defaultGridData[row][col] = TURRET_DEFAULT;
 					}
 
@@ -532,8 +562,8 @@ void Game::ClickOnSprite(SDL_Event& theEvent, vector<Sprite*> theClickableSprite
 				}
 				//Wall Buying
 				else if (g_BuyWallToggle) {
-					if (g_EnergyCount >= WALL_COST && defaultGridData[row][col] == 0) {
-						g_EnergyCount -= WALL_COST;
+					if (g_Energy >= WALL_COST && defaultGridData[row][col] == 0) {
+						g_Energy -= WALL_COST;
 						defaultGridData[row][col] = WALL_DEFAULT;
 					}
 
@@ -541,13 +571,36 @@ void Game::ClickOnSprite(SDL_Event& theEvent, vector<Sprite*> theClickableSprite
 				}
 				//Factory Buying
 				else if (g_BuyFactoryToggle) {
-					if (g_EnergyCount >= FACTORY_COST && defaultGridData[row][col] == 0) {
-						g_EnergyCount -= FACTORY_COST;
+					if (g_Energy >= FACTORY_COST && defaultGridData[row][col] == 0) {
+						g_Energy -= FACTORY_COST;
 						defaultGridData[row][col] = FACTORY_DEFAULT;
-						numFactories++;
+						g_EnergyPerSecond += 2;
 					}
 
 					g_BuyFactoryToggle = false;
+				}
+				//Upgrading anything
+				else if (g_UpgradeToggle) {
+
+					if (g_Energy >= UPGRADE_COST) {
+
+						g_Energy -= UPGRADE_COST;
+
+						switch (defaultGridData[row][col]) {
+							case TURRET_DEFAULT:
+								defaultGridData[row][col] = TURRET_UPGRADE1;
+								break;
+							case WALL_DEFAULT:
+								defaultGridData[row][col] = WALL_UPGRADE1;
+								break;
+							case FACTORY_DEFAULT:
+								defaultGridData[row][col] = FACTORY_UPGRADE1;
+								g_EnergyPerSecond += 3;
+								break;
+							default:
+								break;
+						}
+					}
 				}
 
 				UpdateGrid();
@@ -561,8 +614,11 @@ void Game::ClickOnSprite(SDL_Event& theEvent, vector<Sprite*> theClickableSprite
 				cout << "Clicked on BUY TURRET" << endl;
 				g_BuyWallToggle = false;
 				g_BuyFactoryToggle = false;
+				g_UpgradeToggle = false;
 				buyWallButton.setText(m_Renderer, g_Font, COLOR_WHITE, "WALL: " + to_string(WALL_COST));
 				buyFactoryButton.setText(m_Renderer, g_Font, COLOR_WHITE, "FACTORY: " + to_string(FACTORY_COST));
+				upgradeButton.setText(m_Renderer, g_Font, COLOR_WHITE, "UPGRADE");
+
 
 				if (g_BuyTurretToggle) {
 					g_BuyTurretToggle = false;
@@ -578,8 +634,11 @@ void Game::ClickOnSprite(SDL_Event& theEvent, vector<Sprite*> theClickableSprite
 				cout << "Clicked on BUY WALL" << endl;
 				g_BuyTurretToggle = false;
 				g_BuyFactoryToggle = false;
+				g_UpgradeToggle = false;
 				buyTurretButton.setText(m_Renderer, g_Font, COLOR_WHITE, "TURRET: " + to_string(TURRET_COST));
 				buyFactoryButton.setText(m_Renderer, g_Font, COLOR_WHITE, "FACTORY: " + to_string(FACTORY_COST));
+				upgradeButton.setText(m_Renderer, g_Font, COLOR_WHITE, "UPGRADE");
+
 
 				if (g_BuyWallToggle) {
 					g_BuyWallToggle = false;
@@ -594,8 +653,11 @@ void Game::ClickOnSprite(SDL_Event& theEvent, vector<Sprite*> theClickableSprite
 				cout << "Clicked on BUY FACTORY" << endl;
 				g_BuyWallToggle = false;
 				g_BuyTurretToggle = false;
+				g_UpgradeToggle = false;
 				buyTurretButton.setText(m_Renderer, g_Font, COLOR_WHITE, "TURRET: " + to_string(TURRET_COST));
 				buyWallButton.setText(m_Renderer, g_Font, COLOR_WHITE, "WALL: " + to_string(WALL_COST));
+				upgradeButton.setText(m_Renderer, g_Font, COLOR_WHITE, "UPGRADE");
+
 
 				if (g_BuyFactoryToggle) {
 					g_BuyFactoryToggle = false;
@@ -604,6 +666,26 @@ void Game::ClickOnSprite(SDL_Event& theEvent, vector<Sprite*> theClickableSprite
 				else {
 					g_BuyFactoryToggle = true;
 					buyFactoryButton.setText(m_Renderer, g_Font, COLOR_RED, "FACTORY: " + to_string(FACTORY_COST));
+				}
+
+			}
+			else if (currentSpriteName.find(TEXT_PREFIX "Upgrade") != string::npos && spriteToCheck->IsEnabled()) {
+				cout << "Clicked on UPGRADE" << endl;
+				g_BuyWallToggle = false;
+				g_BuyTurretToggle = false;
+				g_BuyFactoryToggle = false;
+				buyTurretButton.setText(m_Renderer, g_Font, COLOR_WHITE, "TURRET: " + to_string(TURRET_COST));
+				buyFactoryButton.setText(m_Renderer, g_Font, COLOR_WHITE, "FACTORY: " + to_string(FACTORY_COST));
+				buyWallButton.setText(m_Renderer, g_Font, COLOR_WHITE, "WALL: " + to_string(WALL_COST));
+
+
+				if (g_UpgradeToggle) {
+					g_UpgradeToggle = false;
+					upgradeButton.setText(m_Renderer, g_Font, COLOR_WHITE, "UPGRADE");
+				}
+				else {
+					g_UpgradeToggle = true;
+					upgradeButton.setText(m_Renderer, g_Font, COLOR_PURPLE, "UPGRADE");
 				}
 
 			}
@@ -706,52 +788,128 @@ void Game::HandleEvents() {
 			break;//event type
 	}
 }
+std::vector<std::unique_ptr<Sprite>> bulletList;  // own bullets separately
 
-void Game::Update() {
-
+void Game::Update(float deltaTime) {
 	//0 - main menu
 	//1 - options menu
 	//2 - gameplay
 	if (m_CurrentScene.m_SceneEnum == 2) {
-		if (g_EnergyCount < 0) {
-			g_EnergyCount = 0;
+		if (g_Energy < 0) {
+			g_Energy = 0;
 		}
 		//cout << numFactories << endl;
-		string strEnergyCount = to_string(g_EnergyCount);
-		resourceCounterText2.setText(m_Renderer, g_Font, COLOR_RED, strEnergyCount);
-
-		g_GameplayFrameCounter++;
-		if (g_GameplayFrameCounter % 60 == 0) {
-
-			//update Energy count (per second)
-			g_EnergyCount += numFactories + 1;
+		if ((int)g_Energy != m_LastDisplayedEnergy) {
+			resourceCounterText2.setText(m_Renderer, g_Font, COLOR_RED, to_string((int)g_Energy));
+			m_LastDisplayedEnergy = (int)g_Energy;
+		}
 
 
-			for (int i = 0; i < gridRows; i++) {
-				for (int j = 0; j < gridCols; j++) {
-					if (defaultGridData[i][j] == TURRET_DEFAULT) {
+		//Turret Bullets
+		static float defaultTurretTimer[gridRows][gridCols] = { 0 };   // One timer per turret
+		static float upgradedTurretTimer[gridRows][gridCols] = { 0 };   // One timer per turret
+		
 
-						//spawn bullet
-						std::string name = "friendlyTurretSprite" + to_string(g_GameplayFrameCounter % 60);
-						Sprite* friendlyTurretLaser = new Sprite(m_Renderer, "Assets/friendly_laser.png", -1, -1, defaultGridDataCoords[i][j].X + 20, defaultGridDataCoords[i][j].Y, name.c_str());
-						m_CurrentScene.AddSpriteToList(friendlyTurretLaser);
+		for (int i = 0; i < gridRows; i++) {
+			for (int j = 0; j < gridCols; j++) {
+				if (defaultGridData[i][j] == TURRET_DEFAULT) {
+
+					defaultTurretTimer[i][j] -= deltaTime;
+
+					if (defaultTurretTimer[i][j] <= 0.0f) {
+						std::string name = "friendlyTurretLaser_" + std::to_string(i) + "_" + std::to_string(j);
+
+						bulletList.push_back(
+							std::make_unique<Sprite>(m_Renderer, "Assets/friendly_laser.png",-1, -1,
+							defaultGridDataCoords[i][j].X + 20,
+							defaultGridDataCoords[i][j].Y,
+							name.c_str())
+						);
+
+						m_CurrentScene.AddSpriteToList(bulletList.back().get());
+
+						defaultTurretTimer[i][j] = 1.0f;   // 1 shot per second
+					}
+				}
+				if (defaultGridData[i][j] == TURRET_UPGRADE1) {
+
+					upgradedTurretTimer[i][j] -= deltaTime;
+
+					if (upgradedTurretTimer[i][j] <= 0.0f) {
+						std::string name = "friendlyTurretLaser_upgrade1_" + std::to_string(i) + "_" + std::to_string(j);
+
+						bulletList.push_back(
+							std::make_unique<Sprite>(m_Renderer, "Assets/friendly_laser_upgraded.png", -1, -1,
+								defaultGridDataCoords[i][j].X + 20,
+								defaultGridDataCoords[i][j].Y,
+								name.c_str())
+						);
+
+						m_CurrentScene.AddSpriteToList(bulletList.back().get());
+
+						upgradedTurretTimer[i][j] = 0.5f;   // 2 shot per second
 					}
 				}
 			}
 		}
 
-		//Move bullets per frame
-		for (Sprite* sprite : m_CurrentScene.GetSpriteList()) {
-			if (sprite->getSpriteName().find("friendlyTurretSprite") != std::string::npos) {
-				sprite->setYPos(sprite->getRect()->y - 5);
+		//Doubles as the game timer - always counts up, so extra processing is done here
+		g_EnergyTimer += deltaTime;
+
+		//Timer for bullets
+		//	g_BulletLifeTimer += deltaTime;
+
+		std::vector<Sprite*> spritesToRemove;
+		// Move + check off-screen EVERY FRAME
+		
+		// Move + check off-screen EVERY FRAME
+		for (auto it = bulletList.begin(); it != bulletList.end(); ) {
+			auto* s = it->get();
+
+			float newY = s->getRect()->y - 400.0f * deltaTime;
+			s->setYPos(static_cast<int>(newY));
+
+			if (newY < -50.0f) {
+				RemoveSpriteFromList(s);    // remove from rendering list
+				it = bulletList.erase(it);  // auto-deletes the Sprite
+			}
+			else {
+				++it;
 			}
 		}
 
-		
-			
-		//Check and/or reset hexagon positions every 45 frames ( 3/4 of a second )
-		if (g_GameplayFrameCounter % 45 == 0)
+
+		if (g_EnergyTimer >= 1.0f)
+		{
+			g_Energy += g_EnergyPerSecond;
+			g_EnergyTimer -= 1.0f;
+
+
+			//Various Clean Ups////////
+			////////////////////////////
+			//TODO: somehow destroy all bullets that disappear off screen
+
+
+
 			ResetGridPosition();
+			//////////////////////
+
+
+		}
+
+		//Sprite Cleanup
+		//for (Sprite* dead : spritesToRemove)
+		//{
+		//	if (dead == nullptr) continue;  
+
+		//	dead->Destroy(); 
+
+	
+		//	RemoveSpriteFromList(dead);
+
+	
+		//	delete dead;
+		//}
 
 	} 
     //count / FPS = Timer in seconds
@@ -819,6 +977,24 @@ void Game::SortSpritesForRendering() {
 		sprite->setSpriteName(newName.c_str());
 	}
 
+}
+void Game::RemoveSpriteFromList(Sprite* spriteToRemove)
+{
+	auto& list = m_CurrentScene.m_ListOfSprites;
+	list.erase(
+		std::remove(list.begin(), list.end(), spriteToRemove),
+		list.end()
+	);
+}
+
+void Game::DestroyAllSpritesOfName(string spriteName) {
+	for (Sprite* sprite : m_CurrentScene.GetSpriteList()) {
+		std::string name = sprite->getSpriteName();
+
+		if (name.find(spriteName.c_str()) != std::string::npos) {
+			sprite->Destroy();
+		}
+	}
 }
 
 void Game::Render() {
