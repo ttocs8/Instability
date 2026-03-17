@@ -26,6 +26,10 @@ class Game {
 public:
 	Game();
 	int GLOBAL_TIMER_SECONDS = 0;
+
+	float m_DeltaTime = 0.0f;
+	Uint32 m_LastFrameTime = 0;
+
 	int init(const char* title, int xpos, int ypos, int width, int height, bool isFullscreen);
 
 	void HandleEvents();

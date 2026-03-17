@@ -138,6 +138,25 @@ void LoadSettingsFromConfig(map< string, map<string, vector<string> > >& TheSett
 	tempFile.close();
 }
 
+//Windows does a funny bit where it freezes the main thread when moving a nonfullscreen window around
+//This function is basically a copy of main() and ensures the main thread keeps running. Added at the end of init() as an SDL EventWatch
+static int GameLoopEventWatch(void* userdata, SDL_Event* event)
+{
+	if (event->type == SDL_WINDOWEVENT && (event->window.event == SDL_WINDOWEVENT_MOVED || event->window.event == SDL_WINDOWEVENT_RESIZED)) {
+		Game* game = reinterpret_cast<Game*>(userdata);
+
+		Uint32 now = SDL_GetTicks64();
+		if (game->m_LastFrameTime == 0) game->m_LastFrameTime = now;
+		game->m_DeltaTime = (now - game->m_LastFrameTime) / 1000.0f;
+		game->m_LastFrameTime = now;
+
+		game->HandleEvents();
+		game->Update(game->m_DeltaTime);
+		game->Render();
+	}
+	return 0;
+}
+
 int Game::init(
 	const char* title, 
 	int xpos, 
@@ -292,6 +311,7 @@ int Game::init(
 	LoadSettingsFromConfig(g_SettingsFileMap);
 	SDL_assert(!g_SettingsFileMap.empty());
 
+	SDL_AddEventWatch(GameLoopEventWatch, this);
 	return 0;
 }
 
@@ -968,6 +988,7 @@ void Game::RemoveSpriteFromRenderingList(Sprite* spriteToRemove)
 		std::remove(list.begin(), list.end(), spriteToRemove),
 		list.end()
 	);
+	spriteToRemove->Destroy();
 }
 
 void Game::Render() {

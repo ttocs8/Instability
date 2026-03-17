@@ -25,6 +25,9 @@ int main(int argc, char* argv[]) {
 		deltaTime = (now - lastFrameTime) / 1000.0f;
 		lastFrameTime = now;
 
+		s_Game->m_DeltaTime = deltaTime;
+		s_Game->m_LastFrameTime = lastFrameTime;
+
 		s_Game->HandleEvents();
 		s_Game->Update(deltaTime);
 		s_Game->Render();

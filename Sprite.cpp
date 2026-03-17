@@ -129,8 +129,6 @@ void Sprite::Destroy() {
 		delete m_Rect;
 		m_Rect = nullptr;
 	}
-
-	delete this;   // <--- this is the key line for simple implementations
 }
 
 
