@@ -5,6 +5,44 @@
 //using namespace std;
 
 
+
+//INITIALIZATION//////////////////////////////
+TTF_Font* g_Font;
+string g_SaveStatesFolder;
+map< string, map<string, vector<string> > > g_SettingsFileMap;
+
+
+
+///GAMEPLAY///////////////////////////////////
+const int gridRows = 4;
+const int gridCols = 9;
+struct CoordPair {
+	int X;
+	int Y;
+};
+Sprite* hexGridSprites[gridRows][gridCols]{};
+CoordPair defaultGridDataCoords[gridRows][gridCols];
+int defaultGridData[gridRows][gridCols]
+{
+	{0,0,0,0,0,0,0,0,0},
+	{0,0,0,0,0,0,0,0,0},
+	{0,0,0,0,0,0,0,0,0},
+	{0,0,0,0,0,0,0,0,0}
+};
+
+bool g_BuyTurretToggle = false;
+bool g_BuyWallToggle = false;
+bool g_BuyFactoryToggle = false;
+bool g_UpgradeToggle = false;
+
+
+SDL_TimerID wiggle_timerID = 0; //timer for hexagon click wiggle feedback effect
+
+float g_Energy = 0.0f;           // Current total energy
+float g_EnergyPerSecond = 1.0f;  // How much energy you gain per second, 1 by default
+float g_EnergyTimer = 0.0f;      // Engergy accumulator (timer)
+
+//SPRITES//////////////////////////////////
 Scene sc_MainMenu;
 Sprite bg1;
 Sprite titleCard;
@@ -30,46 +68,11 @@ Sprite upgradeButton;
 
 Sprite resourceCounterText;
 Sprite resourceCounterText2;
-const int gridRows = 4;
-const int gridCols = 9;
-struct CoordPair {
-	int X;
-	int Y;
-};
-Sprite* defaultHexGrid[gridRows][gridCols]{};
-CoordPair defaultGridDataCoords[gridRows][gridCols];
-int defaultGridData[gridRows][gridCols]
-{
-	{0,0,0,0,0,0,0,0,0},
-	{0,0,0,0,0,0,0,0,0},
-	{0,0,0,0,0,0,0,0,0},
-	{0,0,0,0,0,0,0,0,0}
-};
 
+std::vector<std::unique_ptr<Sprite>> bulletList; //used for sprite rendering and cleanup
 
-
-
-TTF_Font* g_Font;
-
-string g_SaveStatesFolder;
-map< string, map<string, vector<string> > > g_SettingsFileMap;
-
-
-////Gameplay
-bool g_BuyTurretToggle = false;
-bool g_BuyWallToggle = false;
-bool g_BuyFactoryToggle = false;
-bool g_UpgradeToggle = false;
-
-//timer for hexagon click wiggle feedback effect
-SDL_TimerID wiggle_timerID = 0;
-
-float g_Energy = 0.0f;           // Current total energy
-float g_EnergyPerSecond = 1.0f;  // How much energy you gain per second, 1 by default
-float g_EnergyTimer = 0.0f;      // Engergy accumulator (timer)
-
-std::vector<std::unique_ptr<Sprite>> bulletList; //bullet list for sprite rendering and cleanup
-//////
+///////////////////////////////////
+///////////////////////////////////
 
 Game::Game() {
 	m_GameDataFolder = SDL_GetPrefPath(ORG_NAME, APP_NAME);
@@ -81,7 +84,8 @@ Game::Game() {
 Game::~Game() {}
 
 
-//VERY MESSY, MAY NEED TO REFACTOR
+//VERY BAD 
+// TODO: REDO ENTIRE DESIGN OF CONFIG FROM SCRATCH, THIS SUCKS
 void LoadSettingsFromConfig(map< string, map<string, vector<string> > >& TheSettingsFileMap) {
 	//Read in initial save data and apply
 	string filePath = g_SaveStatesFolder + GlobalHelpers::GetOSSeparator() + INITIAL_SAVE_STATE_FILE + ".config";
@@ -178,7 +182,7 @@ int Game::init(
 	}
 	else
 	{
-		//some error happened, failed to create directory
+		//something happened, failed to create directory
 		// IGNORE FOR NOW //
 	}
 
@@ -225,7 +229,7 @@ int Game::init(
 		
 		SetResolution(w, h);
 		m_mainWindow = SDL_CreateWindow(title, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, w, h, windowFlags);
-		//SDL_SetWindowResizable(m_mainWindow,SDL_TRUE);
+		SDL_SetWindowResizable(m_mainWindow,SDL_TRUE);
 
 		if (m_mainWindow) {
 			cout << "Window created..." << endl;
@@ -298,28 +302,28 @@ void Game::UpdateGrid()
 			switch (defaultGridData[i][j]) {
 			
 				case TURRET_DEFAULT:
-					defaultHexGrid[i][j]->setTexture(m_Renderer, "Assets/turret.png");
+					hexGridSprites[i][j]->setTexture(m_Renderer, "Assets/turret.png");
 					break;
 				case TURRET_UPGRADE1:
-					defaultHexGrid[i][j]->setTexture(m_Renderer, "Assets/turret_upgraded.png");
+					hexGridSprites[i][j]->setTexture(m_Renderer, "Assets/turret_upgraded.png");
 					break;
 
 				case WALL_DEFAULT:
-					defaultHexGrid[i][j]->setTexture(m_Renderer, "Assets/wall.png");
+					hexGridSprites[i][j]->setTexture(m_Renderer, "Assets/wall.png");
 					break;
 				case WALL_UPGRADE1:
-					defaultHexGrid[i][j]->setTexture(m_Renderer, "Assets/wall_upgraded.png");
+					hexGridSprites[i][j]->setTexture(m_Renderer, "Assets/wall_upgraded.png");
 					break;
 
 				case FACTORY_DEFAULT:
-					defaultHexGrid[i][j]->setTexture(m_Renderer, "Assets/factory.png");
+					hexGridSprites[i][j]->setTexture(m_Renderer, "Assets/factory.png");
 					break;
 				case FACTORY_UPGRADE1:
-					defaultHexGrid[i][j]->setTexture(m_Renderer, "Assets/factory_upgraded.png");
+					hexGridSprites[i][j]->setTexture(m_Renderer, "Assets/factory_upgraded.png");
 					break;
 
 				default:
-					defaultHexGrid[i][j]->setTexture(m_Renderer, "Assets/temphex.png");
+					hexGridSprites[i][j]->setTexture(m_Renderer, "Assets/temphex.png");
 			}
 			
 		}
@@ -330,16 +334,16 @@ void Game::ResetGridPosition()
 {
 	for (int i = 0; i < gridRows; i++) {
 		for (int j = 0; j < gridCols; j++) {
-			int currentX = defaultHexGrid[i][j]->getRect()->x;
-			int currentY = defaultHexGrid[i][j]->getRect()->y;
+			int currentX = hexGridSprites[i][j]->getRect()->x;
+			int currentY = hexGridSprites[i][j]->getRect()->y;
 			int defaultX = defaultGridDataCoords[i][j].X;
 			int defaultY = defaultGridDataCoords[i][j].Y;
 
 			if (currentY != defaultY )
-				defaultHexGrid[i][j]->setYPos(defaultY);
+				hexGridSprites[i][j]->setYPos(defaultY);
 
 			if (currentX != defaultX)
-				defaultHexGrid[i][j]->setXPos(defaultX);
+				hexGridSprites[i][j]->setXPos(defaultX);
 		}
 	}
 
@@ -408,15 +412,15 @@ void Game::SetUpGameplayGrid()
 	for (int i = 0; i < gridRows; i++) {
 		for (int j = 0; j < gridCols; j++) {
 			string nodeName = "Hexagon [ " + to_string(i) + " , " + to_string(j) + " ]";
-			defaultHexGrid[i][j] = new Sprite(m_Renderer, "Assets/temphex.png", hexWidth, hexHeight, gridXPos + (j * (hexWidth - (hexHeight/6) + 12)) - 50, gridYPos + (i *  (hexHeight + 14)), nodeName.c_str());
+			hexGridSprites[i][j] = new Sprite(m_Renderer, "Assets/temphex.png", hexWidth, hexHeight, gridXPos + (j * (hexWidth - (hexHeight/6) + 12)) - 50, gridYPos + (i *  (hexHeight + 14)), nodeName.c_str());
 			
 			//offset the Y of every other column
 			if (j % 2 == 0) {
-				defaultHexGrid[i][j]->setYPos((defaultHexGrid[i][j]->getRect()->y + (defaultHexGrid[i][j]->getRect()->h) / 2)+2);
+				hexGridSprites[i][j]->setYPos((hexGridSprites[i][j]->getRect()->y + (hexGridSprites[i][j]->getRect()->h) / 2)+2);
 			}
-			defaultGridDataCoords[i][j].X = defaultHexGrid[i][j]->getRect()->x;
-			defaultGridDataCoords[i][j].Y = defaultHexGrid[i][j]->getRect()->y;
-			sc_GameplayScene.AddSpriteToList(defaultHexGrid[i][j]);			
+			defaultGridDataCoords[i][j].X = hexGridSprites[i][j]->getRect()->x;
+			defaultGridDataCoords[i][j].Y = hexGridSprites[i][j]->getRect()->y;
+			sc_GameplayScene.AddSpriteToList(hexGridSprites[i][j]);			
 		}
 	}
 
