@@ -86,57 +86,57 @@ Game::~Game() {}
 
 //VERY BAD 
 // TODO: REDO ENTIRE DESIGN OF CONFIG FROM SCRATCH, THIS SUCKS
-void LoadSettingsFromConfig(map< string, map<string, vector<string> > >& TheSettingsFileMap) {
-	//Read in initial save data and apply
-	string filePath = g_SaveStatesFolder + GlobalHelpers::GetOSSeparator() + INITIAL_SAVE_STATE_FILE + ".config";
-	ifstream tempFile;
-	tempFile.open(filePath, ios::in);
-
-	int lineNum = 0;
-	if (tempFile.is_open())
-	{
-		vector<string> tokensToProcess;
-		map < string, vector < string > > vectorOfTokensToProcess;
-		vector<string> fileLines;
-		int index = 0;
-		for (string line; getline(tempFile, line, '\n'); ) {
-			fileLines.push_back(line);
-			char* token = strtok((char*)line.c_str(), ",");
-	
-			string name = token;
-			if (name.find(SAVE_STATE_PREFIX) != string::npos) {
-				TheSettingsFileMap.emplace(name, vectorOfTokensToProcess);
-				lineNum++;
-				continue;
-			}
-
-			//tokenize each line
-			while (token != NULL)
-			{
-				int i = 1;
-				string settingHeader;
-				while (i < 10) {
-					settingHeader = fileLines.at(lineNum - i);
-					if (settingHeader.find(SAVE_STATE_PREFIX) != string::npos) {
-						break;
-					}
-					i++;
-				}
-				if (name.find(token) == string::npos) {
-					TheSettingsFileMap[settingHeader][name].push_back(token);
-				}
-				token = strtok(NULL, ",");
-			}
-
-			lineNum++;
-		}
-	}
-	else
-	{
-		cout << "Could not open settings file" << endl;
-	}
-	tempFile.close();
-}
+//void LoadSettingsFromConfig(map< string, map<string, vector<string> > >& TheSettingsFileMap) {
+//	//Read in initial save data and apply
+//	string filePath = g_SaveStatesFolder + GlobalHelpers::GetOSSeparator() + INITIAL_SAVE_STATE_FILE + ".config";
+//	ifstream tempFile;
+//	tempFile.open(filePath, ios::in);
+//
+//	int lineNum = 0;
+//	if (tempFile.is_open())
+//	{
+//		vector<string> tokensToProcess;
+//		map < string, vector < string > > vectorOfTokensToProcess;
+//		vector<string> fileLines;
+//		int index = 0;
+//		for (string line; getline(tempFile, line, '\n'); ) {
+//			fileLines.push_back(line);
+//			char* token = strtok((char*)line.c_str(), ",");
+//	
+//			string name = token;
+//			if (name.find(SAVE_STATE_PREFIX) != string::npos) {
+//				TheSettingsFileMap.emplace(name, vectorOfTokensToProcess);
+//				lineNum++;
+//				continue;
+//			}
+//
+//			//tokenize each line
+//			while (token != NULL)
+//			{
+//				int i = 1;
+//				string settingHeader;
+//				while (i < 10) {
+//					settingHeader = fileLines.at(lineNum - i);
+//					if (settingHeader.find(SAVE_STATE_PREFIX) != string::npos) {
+//						break;
+//					}
+//					i++;
+//				}
+//				if (name.find(token) == string::npos) {
+//					TheSettingsFileMap[settingHeader][name].push_back(token);
+//				}
+//				token = strtok(NULL, ",");
+//			}
+//
+//			lineNum++;
+//		}
+//	}
+//	else
+//	{
+//		cout << "Could not open settings file" << endl;
+//	}
+//	tempFile.close();
+//}
 
 //Windows does a funny bit where it freezes the main thread when moving a nonfullscreen window around
 //This function is basically a copy of main() and ensures the main thread keeps running. Added at the end of init() as an SDL EventWatch
@@ -167,8 +167,8 @@ int Game::init(
 )
 {
 
-	string firstTimeInitFilePath = g_SaveStatesFolder + GlobalHelpers::GetOSSeparator() + FIRST_TIME_INIT_FILENAME + ".init";
-	bool isFirstTimeInit = !GlobalHelpers::FileExists(firstTimeInitFilePath.c_str());
+	//string firstTimeInitFilePath = g_SaveStatesFolder + GlobalHelpers::GetOSSeparator() + FIRST_TIME_INIT_FILENAME + ".init";
+	//bool isFirstTimeInit = !GlobalHelpers::FileExists(firstTimeInitFilePath.c_str());
 
 	//used for asserting files/directories exist
 	struct stat info;
@@ -179,68 +179,68 @@ int Game::init(
 	*	C:\Users\USER\AppData\Roaming\Perpetual Motion Software\Instability\SaveStates
 	*	...
 	*/
-	cout << "Initializing game data folders..." << endl;
-	if (_mkdir(g_SaveStatesFolder.c_str()) == 0) {
-		cout << "\t>> Created directory \"" << g_SaveStatesFolder << "\"" << endl;
+	//cout << "Initializing game data folders..." << endl;
+	//if (_mkdir(g_SaveStatesFolder.c_str()) == 0) {
+	//	cout << "\t>> Created directory \"" << g_SaveStatesFolder << "\"" << endl;
 
-		ofstream ftInitFile;
-		ftInitFile.open(firstTimeInitFilePath, ios::app);
-		ftInitFile << "~First time initialization~\n";
-		ftInitFile << "~Deleting this file may break game initialization - only do so if you know what you are doing";
-		ftInitFile.close();
+	//	ofstream ftInitFile;
+	//	ftInitFile.open(firstTimeInitFilePath, ios::app);
+	//	ftInitFile << "~First time initialization~\n";
+	//	ftInitFile << "~Deleting this file may break game initialization - only do so if you know what you are doing";
+	//	ftInitFile.close();
 
-		cout << "\t>> Created first time initialization file successfully" << endl;
+	//	cout << "\t>> Created first time initialization file successfully" << endl;
 
-	}
-	else if(!isFirstTimeInit) {
-		cout << "\t>> Folder \"" << SAVE_STATE_FOLDER << "\" has already been initialized..." << endl;
+	//}
+	//else if(!isFirstTimeInit) {
+	//	cout << "\t>> Folder \"" << SAVE_STATE_FOLDER << "\" has already been initialized..." << endl;
 
-		SDL_assert(stat(firstTimeInitFilePath.c_str(), &info) == 0);
-		SDL_assert(info.st_mode & S_IFMT);
-		cout << "\t>> First time initialization file already exists and is accessible..." << endl;
-	}
-	else
-	{
-		//something happened, failed to create directory
-		// IGNORE FOR NOW //
-	}
+	//	SDL_assert(stat(firstTimeInitFilePath.c_str(), &info) == 0);
+	//	SDL_assert(info.st_mode & S_IFMT);
+	//	cout << "\t>> First time initialization file already exists and is accessible..." << endl;
+	//}
+	//else
+	//{
+	//	//something happened, failed to create directory
+	//	// IGNORE FOR NOW //
+	//}
 
 	/* Verify game file directories each are:
 	*   1.) a Directory
 	*   2.) Accessible
 	*/
-	SDL_assert(stat(m_GameDataFolder.c_str(), &info) == 0);
-	SDL_assert(info.st_mode & S_IFDIR);
+	//SDL_assert(stat(m_GameDataFolder.c_str(), &info) == 0);
+	//SDL_assert(info.st_mode & S_IFDIR);
 
-	SDL_assert(stat(g_SaveStatesFolder.c_str(), &info) == 0);
-	SDL_assert(info.st_mode & S_IFDIR);
+	//SDL_assert(stat(g_SaveStatesFolder.c_str(), &info) == 0);
+	//SDL_assert(info.st_mode & S_IFDIR);
 
-	int w = width;
-	int h = height;
+	int w = DEFAULT_RESOLUTION_W;
+	int h = DEFAULT_RESOLUTION_H;
 	if (SDL_Init(SDL_INIT_EVERYTHING | SDL_INIT_TIMER) == 0) {
 		
-		if (width == -1 || height == -1) {
-			if (isFirstTimeInit || g_SettingsFileMap.empty()) {
-				w = DEFAULT_RESOLUTION_W;
-				h = DEFAULT_RESOLUTION_H;
-			}
-			else {
-				//Read in settings from file
-				for (map< string, map<string, vector<string> > >::iterator iter1 = g_SettingsFileMap.begin(); iter1 != g_SettingsFileMap.end(); iter1++) {
+		//if (width == -1 || height == -1) {
+		//	if (isFirstTimeInit || g_SettingsFileMap.empty()) {
+		//		w = DEFAULT_RESOLUTION_W;
+		//		h = DEFAULT_RESOLUTION_H;
+		//	}
+		//	else {
+		//		//Read in settings from file
+		//		for (map< string, map<string, vector<string> > >::iterator iter1 = g_SettingsFileMap.begin(); iter1 != g_SettingsFileMap.end(); iter1++) {
 
-					auto& settingName = (*iter1).first;
-					if (settingName.find("RES") != string::npos) {
-						map<string, vector<string> >::iterator iter2((*iter1).second.begin());
-						for (map<string, vector<string> >::iterator iter2 = (*iter1).second.begin(); iter2 != (*iter1).second.end(); iter2++) {
-							auto& settingName = (*iter2).first;
-							auto& data = (*iter2).second;
-							w = stoi(data.at(0));
-							h = stoi(data.at(1));
-						}
-					}
-				}
-			}
-		}
+		//			auto& settingName = (*iter1).first;
+		//			if (settingName.find("RES") != string::npos) {
+		//				map<string, vector<string> >::iterator iter2((*iter1).second.begin());
+		//				for (map<string, vector<string> >::iterator iter2 = (*iter1).second.begin(); iter2 != (*iter1).second.end(); iter2++) {
+		//					auto& settingName = (*iter2).first;
+		//					auto& data = (*iter2).second;
+		//					w = stoi(data.at(0));
+		//					h = stoi(data.at(1));
+		//				}
+		//			}
+		//		}
+		//	}
+		//}
 
 		int windowFlags = 0;
 		if (isFullscreen)
@@ -248,7 +248,7 @@ int Game::init(
 		
 		SetResolution(w, h);
 		m_mainWindow = SDL_CreateWindow(title, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, w, h, windowFlags);
-		SDL_SetWindowResizable(m_mainWindow,SDL_TRUE);
+		//SDL_SetWindowResizable(m_mainWindow,SDL_TRUE);
 
 		if (m_mainWindow) {
 			cout << "Window created..." << endl;
@@ -261,8 +261,11 @@ int Game::init(
 			cout << "Renderer created..." << endl;
 		}
 
-		std::string pathToIcon = ASSETS_FOLDER + GlobalHelpers::GetOSSeparator() + "turret_upgraded.png";
-		SDL_SetWindowIcon(m_mainWindow,IMG_Load(pathToIcon.c_str()));
+		//set application icon
+		std::string pathToIcon = ASSETS_FOLDER + GlobalHelpers::GetOSSeparator() + "icon.png";
+		SDL_Surface* iconSurface = IMG_Load(pathToIcon.c_str());
+		SDL_SetWindowIcon(m_mainWindow, iconSurface);
+		SDL_FreeSurface(iconSurface);
 
 		IS_RUNNING_MAIN = true;
 	}
@@ -276,27 +279,31 @@ int Game::init(
 	TTF_Init();
 
 	//Create Main Menu sprites
-	bg1.Create(m_Renderer, "Assets/menubackground5.png", -1, -1, 0, 0, "BG_BACKGROUND");
-	titleCard.Create(m_Renderer, "Assets/titlecard2.png", -1, -1, RENDER_RESOLUTION_W / 2, RENDER_RESOLUTION_H / 2, "TitleCard", true);
-	tempPlayButton.Create(m_Renderer, "Assets/tempplay.png", -1, -1, RENDER_RESOLUTION_W / 2, RENDER_RESOLUTION_H / 2, "BT_PlayButton", true, 0, 25);
-	tempQuitButton.Create(m_Renderer, "Assets/tempquit.png", -1, -1, RENDER_RESOLUTION_W / 2, RENDER_RESOLUTION_H / 2, "BT_QuitButton", true, 0, 75);
-	tempOptionsButton.Create(m_Renderer, "Assets/tempoptions.png", -1, -1, RENDER_RESOLUTION_W - 75, 25, "BT_OptionsCogwheel");
-	sc_MainMenu.AddSpritesToList({ &bg1, &titleCard, &tempPlayButton, &tempQuitButton, &tempOptionsButton });
+	bg1.Create(m_Renderer, "Assets/menubackground5.png", -1, -1, 0, 0, "BG_BACKGROUND", false);
+	titleCard.Create(m_Renderer, "Assets/titlecard2.png", -1, -1, RENDER_RESOLUTION_W / 2, RENDER_RESOLUTION_H / 2, "TitleCard", false, true);
+	tempPlayButton.Create(m_Renderer, "Assets/tempplay.png", -1, -1, RENDER_RESOLUTION_W / 2, RENDER_RESOLUTION_H / 2, "BT_PlayButton", true, true, 0, 25);
+	tempQuitButton.Create(m_Renderer, "Assets/tempquit.png", -1, -1, RENDER_RESOLUTION_W / 2, RENDER_RESOLUTION_H / 2, "BT_QuitButton", true, true, 0, 75);
+	tempOptionsButton.Create(m_Renderer, "Assets/tempoptions.png", -1, -1, RENDER_RESOLUTION_W - 75, 25, "BT_OptionsCogwheel",true);
+	sc_MainMenu.AddSpritesToRenderList({ &bg1, &titleCard, &tempPlayButton, &tempQuitButton, &tempOptionsButton });
+	sc_MainMenu.AddClickableSpritesToList({ &bg1, &titleCard, &tempPlayButton, &tempQuitButton, &tempOptionsButton });
 	sc_MainMenu.SetName(SCENE_PREFIX "MainMenu");
 
 
 	//Create Options Menu Sprites
-	bg2.Create(m_Renderer, "Assets/menubackground5.png", -1, -1, 0, 0, "BG_BACKGROUND2");
-	tempOptionsButton2.Create(m_Renderer, "Assets/tempoptions2.png", -1, -1, RENDER_RESOLUTION_W - 75, 25, "BT_ExitOptns");
+	bg2.Create(m_Renderer, "Assets/menubackground5.png", -1, -1, 0, 0, "BG_BACKGROUND2", false);
+	tempOptionsButton2.Create(m_Renderer, "Assets/tempoptions2.png", -1, -1, RENDER_RESOLUTION_W - 75, 25, "BT_ExitOptns", true);
 
 	sc_OptionsMenu.SetName(SCENE_PREFIX "OptionsMenu");
-	sc_OptionsMenu.AddSpriteToList(&tempOptionsButton2);
-	sc_OptionsMenu.AddSpriteToList(&bg2);
+	sc_OptionsMenu.AddSpriteToRenderList(&tempOptionsButton2);
+	sc_OptionsMenu.AddSpriteToRenderList(&bg2);
+	sc_OptionsMenu.AddClickableSpriteToList(&tempOptionsButton2);
+	sc_OptionsMenu.AddClickableSpriteToList(&bg2);
 
 	g_Font = TTF_OpenFont("Assets/Stifly.ttf", 24);
-	screenResolutionOptionsText.Create(m_Renderer, NULL, 300, 50, 0, 0, "TXT_ScreenResolution");
+	screenResolutionOptionsText.Create(m_Renderer, NULL, 300, 50, 0, 0, "TXT_ScreenResolution", false);
 	screenResolutionOptionsText.setText(m_Renderer, g_Font, COLOR_WHITE, "Screen Resolution");
-	sc_OptionsMenu.AddSpriteToList(&screenResolutionOptionsText);
+	sc_OptionsMenu.AddSpriteToRenderList(&screenResolutionOptionsText);
+	sc_OptionsMenu.AddClickableSpriteToList(&screenResolutionOptionsText);
 
 	//Create Gameplay Sprites
 	sc_GameplayScene.SetName(SCENE_PREFIX "INSTABILITY");
@@ -304,12 +311,12 @@ int Game::init(
 	m_CurrentScene = sc_MainMenu;				
 
 
-	if (isFirstTimeInit) 
-		CreateInitialSaveSate();
+	//if (isFirstTimeInit) 
+		//CreateInitialSaveSate();
 	
 	//Load all saved settings into map for runtime usage
-	LoadSettingsFromConfig(g_SettingsFileMap);
-	SDL_assert(!g_SettingsFileMap.empty());
+	//LoadSettingsFromConfig(g_SettingsFileMap);
+	//SDL_assert(!g_SettingsFileMap.empty());
 
 	SDL_AddEventWatch(GameLoopEventWatch, this);
 	return 0;
@@ -405,6 +412,11 @@ void Game::GoToNextScene(string theButtonClicked) {
 				defaultGridData[i][j] = 0; 
 			}
 		}
+
+		/*for (auto& bullet : bulletList)
+			RemoveSpriteFromRenderingList(bullet.get());
+		bulletList.clear();*/
+
 		m_CurrentScene = sc_MainMenu;
 		m_CurrentScene.m_SceneEnum = 0;
 		
@@ -432,7 +444,7 @@ void Game::SetUpGameplayGrid()
 	for (int i = 0; i < gridRows; i++) {
 		for (int j = 0; j < gridCols; j++) {
 			string nodeName = "Hexagon [ " + to_string(i) + " , " + to_string(j) + " ]";
-			hexGridSprites[i][j] = new Sprite(m_Renderer, "Assets/temphex.png", hexWidth, hexHeight, gridXPos + (j * (hexWidth - (hexHeight/6) + 12)) - 50, gridYPos + (i *  (hexHeight + 14)), nodeName.c_str());
+			hexGridSprites[i][j] = new Sprite(m_Renderer, "Assets/temphex.png", hexWidth, hexHeight, gridXPos + (j * (hexWidth - (hexHeight/6) + 12)) - 50, gridYPos + (i *  (hexHeight + 14)), nodeName.c_str(), true);
 			
 			//offset the Y of every other column
 			if (j % 2 == 0) {
@@ -440,7 +452,8 @@ void Game::SetUpGameplayGrid()
 			}
 			defaultGridDataCoords[i][j].X = hexGridSprites[i][j]->getRect()->x;
 			defaultGridDataCoords[i][j].Y = hexGridSprites[i][j]->getRect()->y;
-			sc_GameplayScene.AddSpriteToList(hexGridSprites[i][j]);			
+			sc_GameplayScene.AddSpriteToRenderList(hexGridSprites[i][j]);			
+			sc_GameplayScene.AddClickableSpriteToList(hexGridSprites[i][j]);
 		}
 	}
 
@@ -485,7 +498,7 @@ Uint32 hexagon_wiggle_feedback(Uint32 interval, void* param)
 	return 0;
 }
 
-void Game::ClickOnSprite(SDL_Event& theEvent, vector<Sprite*> theClickableSprites)
+void Game::ClickOnSprite(SDL_Event& theEvent, const vector<Sprite*> theClickableSprites)
 {
 	SDL_Point mousePosition;
 
@@ -493,9 +506,9 @@ void Game::ClickOnSprite(SDL_Event& theEvent, vector<Sprite*> theClickableSprite
 	mousePosition.y = theEvent.motion.y;
 
 	for (Sprite* spriteToCheck : theClickableSprites) {
-
+		
 		//If the mouse is INSIDE the sprite rectangle upon clicking
-		if (SDL_PointInRect(&mousePosition, spriteToCheck->getRect()) && theEvent.type == SDL_MOUSEBUTTONDOWN && theEvent.button.button == SDL_BUTTON_LEFT)
+		if (spriteToCheck->IsClickable() && ( SDL_PointInRect(&mousePosition, spriteToCheck->getRect()) && theEvent.type == SDL_MOUSEBUTTONDOWN && theEvent.button.button == SDL_BUTTON_LEFT) )
 		{
 			string currentSpriteName = spriteToCheck->getSpriteName();
 			if (currentSpriteName.find(BUTTON_PREFIX "PlayButton") != string::npos && spriteToCheck->IsEnabled()) {
@@ -503,29 +516,27 @@ void Game::ClickOnSprite(SDL_Event& theEvent, vector<Sprite*> theClickableSprite
 				cout << "Clicked on Play Button" << endl;
 
 				if (!m_IsGameplayGridSetUp) {
-					backToMenuButton.Create(m_Renderer, "Assets/tempoptions2.png", -1, -1, RENDER_RESOLUTION_W - 75, 25, "BT_BackToMenu");
-					sc_GameplayScene.AddSpriteToList(&backToMenuButton);
+					backToMenuButton.Create(m_Renderer, "Assets/tempoptions2.png", -1, -1, RENDER_RESOLUTION_W - 75, 25, "BT_BackToMenu",true);
+					sc_GameplayScene.AddSpriteToRenderList(&backToMenuButton);
+					sc_GameplayScene.AddClickableSpriteToList(&backToMenuButton);
 
 					//TEMPORARY BACKGROUND IMAGE - PLS REPLACE SOON ISH THANKS
-					bg3.Create(m_Renderer, "Assets/stars.png", RENDER_RESOLUTION_W, RENDER_RESOLUTION_H, 0, 0, "BG_BACKGROUND2");
-					sc_GameplayScene.AddSpriteToList(&bg3);
+					bg3.Create(m_Renderer, "Assets/stars.png", RENDER_RESOLUTION_W, RENDER_RESOLUTION_H, 0, 0, "BG_BACKGROUND2", false);
+					sc_GameplayScene.AddSpriteToRenderList(&bg3);
 
-					resourceCounterText.Create(m_Renderer, NULL, 100, 25, RENDER_RESOLUTION_W - 150, 75, "TXT_ResourceCounter");
+					resourceCounterText.Create(m_Renderer, NULL, 100, 25, RENDER_RESOLUTION_W - 150, 75, "TXT_ResourceCounter",false);
 					resourceCounterText.setText(m_Renderer, g_Font, COLOR_WHITE, "ENERGY: ");
 
-					resourceCounterText2.Create(m_Renderer, NULL, 15, 25, RENDER_RESOLUTION_W - 50, 75, "TXT_ResourceCounter2");
+					resourceCounterText2.Create(m_Renderer, NULL, 15, 25, RENDER_RESOLUTION_W - 50, 75, "TXT_ResourceCounter2", false);
 
-					buyTurretButton.Create(m_Renderer, NULL, 110, 25, RENDER_RESOLUTION_W - 150, 105, "TXT_BuyTurret");
-					buyWallButton.Create(m_Renderer, NULL, 85, 25, RENDER_RESOLUTION_W - 150, 135, "TXT_BuyWall");
-					buyFactoryButton.Create(m_Renderer, NULL, 120, 25, RENDER_RESOLUTION_W - 150, 165, "TXT_BuyFactory");
-					upgradeButton.Create(m_Renderer, NULL, 110, 25, RENDER_RESOLUTION_W - 150, 205, "TXT_Upgrade");
+					buyTurretButton.Create(m_Renderer, NULL, 110, 25, RENDER_RESOLUTION_W - 150, 105, "TXT_BuyTurret", true);
+					buyWallButton.Create(m_Renderer, NULL, 85, 25, RENDER_RESOLUTION_W - 150, 135, "TXT_BuyWall", true);
+					buyFactoryButton.Create(m_Renderer, NULL, 120, 25, RENDER_RESOLUTION_W - 150, 165, "TXT_BuyFactory", true);
+					upgradeButton.Create(m_Renderer, NULL, 110, 25, RENDER_RESOLUTION_W - 150, 205, "TXT_Upgrade", true);
 
-					sc_GameplayScene.AddSpriteToList(&resourceCounterText);
-					sc_GameplayScene.AddSpriteToList(&resourceCounterText2);
-					sc_GameplayScene.AddSpriteToList(&buyTurretButton);
-					sc_GameplayScene.AddSpriteToList(&buyWallButton);
-					sc_GameplayScene.AddSpriteToList(&buyFactoryButton);
-					sc_GameplayScene.AddSpriteToList(&upgradeButton);
+					sc_GameplayScene.AddSpritesToRenderList({ &resourceCounterText, &resourceCounterText2, &buyTurretButton, &buyWallButton, &buyFactoryButton, &upgradeButton });
+					sc_GameplayScene.AddClickableSpritesToList({ &buyTurretButton, &buyWallButton, &buyFactoryButton, &upgradeButton });
+				
 
 					//Set up the grid
 					// FOR NOW it is a 9x4 grid of hexagons
@@ -719,7 +730,7 @@ void Game::ClickOnSprite(SDL_Event& theEvent, vector<Sprite*> theClickableSprite
 	}
 }
 
-void Game::HoverOverSprite(SDL_Event& theEvent, vector<Sprite*> theHoverableSprites) {
+void Game::HoverOverSprite(SDL_Event& theEvent, const vector<Sprite*> theHoverableSprites) {
 	SDL_Point mousePosition;
 
 	mousePosition.x = theEvent.motion.x;
@@ -753,12 +764,7 @@ void Game::HoverOverSprite(SDL_Event& theEvent, vector<Sprite*> theHoverableSpri
 
 		if (spriteToCheck->getSpriteName().find(BUTTON_PREFIX "OptionsCogwheel") != string::npos) {
 			//Hovering over Options Cogwheel Button
-
-			//play anymation
-			if (SDL_PointInRect(&mousePosition, spriteToCheck->getRect())) {
-				
-				spriteToCheck->setTexture(m_Renderer, "Assets/tempquit_hover.png");
-				
+			if (SDL_PointInRect(&mousePosition, spriteToCheck->getRect())) {				
 				spriteToCheck->setTexture(m_Renderer, "Assets/tempoptions.png");
 
 			}
@@ -802,13 +808,13 @@ void Game::HandleEvents() {
 			}
 			break;
 		case SDL_MOUSEBUTTONDOWN:
-			ClickOnSprite(event, m_CurrentScene.m_ListOfSprites);
+			ClickOnSprite(event, m_CurrentScene.m_ListOfClickableSprites);
 			break;
 		case SDL_MOUSEBUTTONUP:
-			ClickOnSprite(event, m_CurrentScene.m_ListOfSprites);
+			ClickOnSprite(event, m_CurrentScene.m_ListOfClickableSprites);
 			break;
 		case SDL_MOUSEMOTION:
-			HoverOverSprite(event, m_CurrentScene.m_ListOfSprites);
+			HoverOverSprite(event, m_CurrentScene.m_ListOfClickableSprites);
 			break;
 		default:
 			break;//event type
@@ -847,10 +853,11 @@ void Game::Update(float deltaTime) {
 							std::make_unique<Sprite>(m_Renderer, "Assets/friendly_laser.png",-1, -1,
 							defaultGridDataCoords[i][j].X + 20,
 							defaultGridDataCoords[i][j].Y,
-							name.c_str())
+							name.c_str(), 
+							false)
 						);
 
-						m_CurrentScene.AddSpriteToList(bulletList.back().get());
+						m_CurrentScene.AddSpriteToRenderList(bulletList.back().get());
 
 						defaultTurretTimer[i][j] = 1.0f;   // 1 shot per second
 					}
@@ -866,10 +873,11 @@ void Game::Update(float deltaTime) {
 							std::make_unique<Sprite>(m_Renderer, "Assets/friendly_laser_upgraded.png", -1, -1,
 								defaultGridDataCoords[i][j].X + 20,
 								defaultGridDataCoords[i][j].Y,
-								name.c_str())
+								name.c_str(),
+								false)
 						);
 
-						m_CurrentScene.AddSpriteToList(bulletList.back().get());
+						m_CurrentScene.AddSpriteToRenderList(bulletList.back().get());
 
 						upgradedTurretTimer[i][j] = 0.5f;   // 2 shot per second
 					}
@@ -881,9 +889,6 @@ void Game::Update(float deltaTime) {
 		g_EnergyTimer += deltaTime;
 
 	
-
-		std::vector<Sprite*> spritesToRemove;
-
 		// Move + check off-screen EVERY FRAME
 		for (auto it = bulletList.begin(); it != bulletList.end(); ) {
 			auto* s = it->get();
@@ -891,7 +896,7 @@ void Game::Update(float deltaTime) {
 			float newY = s->getRect()->y - 400.0f * deltaTime;
 			s->setYPos(static_cast<int>(newY));
 
-			if (newY < -50.0f) {
+			if (newY < -25.0f) {
 				//remove from render list + delete from memory
 				RemoveSpriteFromRenderingList(s);    
 				it = bulletList.erase(it);  
@@ -929,7 +934,7 @@ void Game::SortSpritesForRendering() {
 	*/
 
 	//replace the prefixes with numbers for sorting, following the above comments rules
-	for (Sprite* sprite : m_CurrentScene.m_ListOfSprites) {
+	for (Sprite* sprite : m_CurrentScene.m_ListOfSpritesToRender) {
 		string newName = sprite->getSpriteName();
 		if (sprite->getSpriteName().find(BACKGROUND_PREFIX) != string::npos) {
 			newName = "0" + sprite->getSpriteName().substr(2);
@@ -949,17 +954,12 @@ void Game::SortSpritesForRendering() {
 
 
 	//Sort
-	int n = m_CurrentScene.m_ListOfSprites.size();
-	for (int j = 0; j < n - 1; j++) {
-		
-		// Comparing adjacent elements
-		char currentChar = m_CurrentScene.m_ListOfSprites[j]->m_SpriteName[0];
-		char nextChar = m_CurrentScene.m_ListOfSprites[j + 1]->m_SpriteName[0];
-
-		if (int(currentChar) > int(nextChar))
-			// Swapping if in the wrong order
-			swap(m_CurrentScene.m_ListOfSprites[j], m_CurrentScene.m_ListOfSprites[j + 1]);
-	}
+	int n = m_CurrentScene.m_ListOfSpritesToRender.size();
+	for (int pass = 0; pass < n - 1; pass++)
+		for (int j = 0; j < n - 1 - pass; j++)
+			if (int(m_CurrentScene.m_ListOfSpritesToRender[j]->m_SpriteName[0]) >
+				int(m_CurrentScene.m_ListOfSpritesToRender[j + 1]->m_SpriteName[0]))
+				swap(m_CurrentScene.m_ListOfSpritesToRender[j], m_CurrentScene.m_ListOfSpritesToRender[j + 1]);
 
 	//revert to original names
 	for (Sprite* sprite : m_CurrentScene.GetSpriteList()) {
@@ -983,12 +983,16 @@ void Game::SortSpritesForRendering() {
 }
 void Game::RemoveSpriteFromRenderingList(Sprite* spriteToRemove)
 {
-	auto& list = m_CurrentScene.m_ListOfSprites;
-	list.erase(
-		std::remove(list.begin(), list.end(), spriteToRemove),
-		list.end()
+	//auto& list = m_CurrentScene.m_ListOfSprites;
+	m_CurrentScene.m_ListOfSpritesToRender.erase(
+		std::remove(m_CurrentScene.m_ListOfSpritesToRender.begin(), m_CurrentScene.m_ListOfSpritesToRender.end(), spriteToRemove),
+		m_CurrentScene.m_ListOfSpritesToRender.end()
 	);
-	spriteToRemove->Destroy();
+
+	m_CurrentScene.m_ListOfClickableSprites.erase(
+		std::remove(m_CurrentScene.m_ListOfClickableSprites.begin(), m_CurrentScene.m_ListOfClickableSprites.end(), spriteToRemove),
+		m_CurrentScene.m_ListOfClickableSprites.end()
+	);
 }
 
 void Game::Render() {

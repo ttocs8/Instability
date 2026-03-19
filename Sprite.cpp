@@ -5,21 +5,31 @@ Sprite::Sprite()
 	m_Rect = new SDL_Rect();
 }
 
-Sprite::Sprite(SDL_Renderer* theRenderer, const char* theFullPathToImage, int w, int h, int x, int y, const char* theName, bool isScreenCentered, int xOffset, int yOffset)
+Sprite::Sprite(SDL_Renderer* theRenderer, const char* theFullPathToImage, int w, int h, int x, int y, const char* theName, bool isScreenCentered, int xOffset, int yOffset, bool isClickable)
 {
 	m_Rect = new SDL_Rect();
-	Create(theRenderer, theFullPathToImage, w, h, x, y, theName, isScreenCentered, xOffset, yOffset);
+	Create(theRenderer, theFullPathToImage, w, h, x, y, theName, isScreenCentered, xOffset, yOffset, isClickable);
 }
 
-Sprite::Sprite(SDL_Renderer* theRenderer, const char* theFullPathToImage, int w, int h, int x, int y, const char* theName)
+Sprite::Sprite(SDL_Renderer* theRenderer, const char* theFullPathToImage, int w, int h, int x, int y, const char* theName, bool isClickable)
 {
 	m_Rect = new SDL_Rect();
-	Create(theRenderer, theFullPathToImage, w, h, x, y, theName);
+	Create(theRenderer, theFullPathToImage, w, h, x, y, theName, isClickable);
 }
 
-Sprite::~Sprite(){}
+Sprite::~Sprite(){
+	if (m_Texture) {
+		SDL_DestroyTexture(m_Texture);
+		m_Texture = nullptr;
+	}
 
-void Sprite::Create(SDL_Renderer* theRenderer, const char* theFullPathToImage, int w, int h, int x, int y, const char* theName, bool isScreenCentered, int xOffset, int yOffset) {
+	if (m_Rect) {
+		delete m_Rect;
+		m_Rect = nullptr;
+	}
+}
+
+void Sprite::Create(SDL_Renderer* theRenderer, const char* theFullPathToImage, int w, int h, int x, int y, const char* theName, bool isClickable, bool isScreenCentered, int xOffset, int yOffset) {
 
 
 	setDimenstions(w, h);
@@ -37,11 +47,16 @@ void Sprite::Create(SDL_Renderer* theRenderer, const char* theFullPathToImage, i
 	
 	setSpriteName(theName);
 	m_IsEnabled = true;
+	m_IsClickable = isClickable;
 
 	
 }
 
 void Sprite::setTexture(SDL_Renderer* theRenderer, const char* theFullPathToImage ) {
+	if (m_Texture) {
+		SDL_DestroyTexture(m_Texture);  // destroy old first
+		m_Texture = nullptr;
+	}
 	m_SpriteTextureSource = theFullPathToImage;
 	SDL_Surface* tempSurface = IMG_Load(theFullPathToImage);
 	m_Rect->w = tempSurface->w;
@@ -51,6 +66,10 @@ void Sprite::setTexture(SDL_Renderer* theRenderer, const char* theFullPathToImag
 }
 
 void Sprite::setTexture(SDL_Texture* theTexture) {
+	if (m_Texture) {
+		SDL_DestroyTexture(m_Texture); //destroy old first
+		m_Texture = nullptr; 
+	}
 	m_Texture = theTexture;
 }
 
@@ -117,18 +136,4 @@ SDL_Color Sprite::getColor() {
 SDL_Rect* Sprite::getRect() {
 	return m_Rect;
 }
-
-void Sprite::Destroy() {
-	if (m_Texture != nullptr)
-	{
-		SDL_DestroyTexture(m_Texture);
-		m_Texture = nullptr;
-	}
-
-	if (m_Rect) {
-		delete m_Rect;
-		m_Rect = nullptr;
-	}
-}
-
 

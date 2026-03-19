@@ -9,12 +9,12 @@ using namespace std;
 class Sprite {
 public:
 	Sprite();
-	Sprite(SDL_Renderer* theRenderer, const char* theFullPathToImage, int w, int h, int x, int y, const char* theName, bool isScreenCentered, int xOffset, int yOffset);
-	Sprite(SDL_Renderer* theRenderer, const char* theFullPathToImage, int w, int h, int x, int y, const char* theName);
+	Sprite(SDL_Renderer* theRenderer, const char* theFullPathToImage, int w, int h, int x, int y, const char* theName, bool isScreenCentered, int xOffset, int yOffset, bool isClickable);
+	Sprite(SDL_Renderer* theRenderer, const char* theFullPathToImage, int w, int h, int x, int y, const char* theName, bool isClickable);
 	~Sprite();
 	string m_SpriteName = "";
 
-	void Create(SDL_Renderer* theRenderer, const char* theFullPathToImage, int w, int h, int x, int y, const char* theName, bool isScreenCentered = false, int xOffset = 0, int yOffset = 0);
+	void Create(SDL_Renderer* theRenderer, const char* theFullPathToImage, int w, int h, int x, int y, const char* theName, bool isClickable, bool isScreenCentered = false, int xOffset = 0, int yOffset = 0);
 	void setTexture(SDL_Renderer* theRenderer, const char* theFullPathToImage);
 	void setTexture(SDL_Texture* theTexture);
 	void setDimenstions(int w, int h);
@@ -25,6 +25,7 @@ public:
 	void setSpriteName(const char* theName);
 	void setText(SDL_Renderer* theRenderer, TTF_Font* theFont, SDL_Color theColor, string theMessage);
 	bool IsEnabled() { return m_IsEnabled; };
+	bool IsClickable() { return m_IsClickable; };
 	bool compareColor(SDL_Color theColorToCompare);
 
 	void Disable() { m_IsEnabled = false; };
@@ -36,13 +37,12 @@ public:
 	string getTextureSource() { return m_SpriteTextureSource; };
 	SDL_Rect* getRect();
 
-	void Destroy();
-
 private:
 	SDL_Texture* m_Texture = 0;
 	SDL_Rect* m_Rect;
 	string m_SpriteTextureSource = "";
 	SDL_Color m_Color;
 	bool m_IsEnabled = false;
+	bool m_IsClickable = true;
 	
 };

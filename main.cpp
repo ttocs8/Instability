@@ -7,7 +7,7 @@ int main(int argc, char* argv[]) {
 
 	//const int frameDelay = 1000 / FPS;
 
-	Uint32 lastFrameTime = 0;
+	Uint64 lastFrameTime = 0;
 	float deltaTime = 0.0f;
 	static float timer = 0.0f;
 	static int frameCount = 0;
@@ -18,7 +18,7 @@ int main(int argc, char* argv[]) {
 	while (s_Game->IsRunning()) 
 	{
 
-		Uint32 now = SDL_GetTicks64();
+		Uint64 now = SDL_GetTicks64();
 
 		if (lastFrameTime == 0) lastFrameTime = now;
 

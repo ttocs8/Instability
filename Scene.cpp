@@ -5,21 +5,28 @@ Scene::Scene(){
 }
 Scene::~Scene(){}
 
-void Scene::AddSpriteToList( Sprite* theSprite ) {
-	m_ListOfSprites.push_back( theSprite );
+void Scene::AddSpriteToRenderList( Sprite* theSprite ) {
+	m_ListOfSpritesToRender.push_back( theSprite );
 }
 
-void Scene::AddSpritesToList(std::vector<Sprite*> theSprites){
-	m_ListOfSprites.insert(std::end(m_ListOfSprites), std::begin(theSprites), std::end(theSprites));
+void Scene::AddSpritesToRenderList(std::vector<Sprite*> theSprites){
+	m_ListOfSpritesToRender.insert(std::end(m_ListOfSpritesToRender), std::begin(theSprites), std::end(theSprites));
 }
 
+void Scene::AddClickableSpriteToList(Sprite* theSprite) {
+	m_ListOfClickableSprites.push_back(theSprite);
+}
+
+void Scene::AddClickableSpritesToList(std::vector<Sprite*> theSprites) {
+	m_ListOfClickableSprites.insert(std::end(m_ListOfClickableSprites), std::begin(theSprites), std::end(theSprites));
+}
 void Scene::EnableAllSprites() {
-	for (Sprite* sprite : m_ListOfSprites)
+	for (Sprite* sprite : m_ListOfSpritesToRender)
 		sprite->Enable();
 }
 
 void Scene::EnableAllSprites_Except(std::string theNameToFilter) {
-	for (Sprite* sprite : m_ListOfSprites)
+	for (Sprite* sprite : m_ListOfSpritesToRender)
 		if (sprite->getSpriteName().find(theNameToFilter) == std::string::npos)
 			sprite->Enable();
 		else
@@ -27,12 +34,12 @@ void Scene::EnableAllSprites_Except(std::string theNameToFilter) {
 }
 
 void Scene::DisableAllSprites() {
-	for (Sprite* sprite : m_ListOfSprites)
+	for (Sprite* sprite : m_ListOfSpritesToRender)
 		sprite->Disable();
 }
 
 Sprite* Scene::GetSprite(std::string theSpriteName) {
-	for (Sprite* sprite : m_ListOfSprites)
+	for (Sprite* sprite : m_ListOfSpritesToRender)
 		if (sprite->getSpriteName().find(theSpriteName) != std::string::npos)
 			return sprite;
 

@@ -10,9 +10,11 @@ class Scene {
 public:
 	Scene();
 	~Scene();
-	void AddSpriteToList(Sprite* theSprite);
-	void AddSpritesToList(std::vector<Sprite*> theSprites);
-	std::vector<Sprite*> GetSpriteList() { return m_ListOfSprites; };
+	void AddSpriteToRenderList(Sprite* theSprite);
+	void AddSpritesToRenderList(std::vector<Sprite*> theSprites);
+	void AddClickableSpriteToList(Sprite* theSprite);
+	void AddClickableSpritesToList(std::vector<Sprite*> theSprites);
+	std::vector<Sprite*> GetSpriteList() { return m_ListOfSpritesToRender; };
 	Sprite* GetSprite(std::string theSpriteName);
 	string GetName() { return  m_SceneName; }
 	void SetName(std::string theName) { m_SceneName = theName; }
@@ -20,7 +22,8 @@ public:
 	void EnableAllSprites_Except(std::string theNameToFilter);
 	void DisableAllSprites();
 
-	std::vector<Sprite*> m_ListOfSprites;
+	std::vector<Sprite*> m_ListOfSpritesToRender;
+	std::vector<Sprite*> m_ListOfClickableSprites;
 	//0 - main menu
 	//1 - options menu
 	//2 - gameplay

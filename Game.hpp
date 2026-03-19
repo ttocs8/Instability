@@ -58,8 +58,10 @@ private:
 	void SetResolution(int w, int h);
 	ScreenResolution_t GetCurrentResolution() { return m_CurrentScreenResolution; };
 	void SetUpGameplayGrid();
-	void ClickOnSprite(SDL_Event& theEvent, vector<Sprite*> theClickableSprites);
-	void HoverOverSprite(SDL_Event& theEvent, vector<Sprite*> theHoverableSprites);
+	//the Vector is const so it doesnt copy the entire list every single call
+	void ClickOnSprite(SDL_Event& theEvent, const vector<Sprite*> theClickableSprites);
+	//the Vector is const so it doesnt copy the entire list every single call
+	void HoverOverSprite(SDL_Event& theEvent, const vector<Sprite*> theHoverableSprites);
 	void UpdateGrid();
 	void ResetGridPosition();
 	void GoToNextScene(string theButtonClicked);
