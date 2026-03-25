@@ -1,5 +1,5 @@
 ﻿  Game.cpp
-C:\Users\hunts\Desktop\Desktop Folders\C++ Game\Instability++\Instability\Game.cpp(148,14): warning C4244: 'initializing': conversion from 'Uint64' to 'Uint32', possible loss of data
-C:\Users\hunts\Desktop\Desktop Folders\C++ Game\Instability++\Instability\Game.cpp(174,14): warning C4101: 'info': unreferenced local variable
-C:\Users\hunts\Desktop\Desktop Folders\C++ Game\Instability++\Instability\Game.cpp(957,8): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
+C:\Users\hunts\Desktop\Desktop Folders\C++ Game\Instability++\Instability\Game.cpp(93,14): warning C4244: 'initializing': conversion from 'Uint64' to 'Uint32', possible loss of data
+C:\Users\hunts\Desktop\Desktop Folders\C++ Game\Instability++\Instability\Game.cpp(116,14): warning C4101: 'info': unreferenced local variable
+C:\Users\hunts\Desktop\Desktop Folders\C++ Game\Instability++\Instability\Game.cpp(816,8): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
   Instability++.vcxproj -> C:\Users\hunts\Desktop\Desktop Folders\C++ Game\Instability++\Instability\x64\Debug\Instability++.exe

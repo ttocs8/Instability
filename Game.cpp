@@ -42,7 +42,7 @@ float g_Energy = 0.0f;           // Current total energy
 float g_EnergyPerSecond = 1.0f;  // How much energy you gain per second, 1 by default
 float g_EnergyTimer = 0.0f;      // Engergy accumulator (timer)
 
-//SPRITES//////////////////////////////////
+//SCENES & SPRITES//////////////////////////////////
 Scene sc_MainMenu;
 Sprite bg1;
 Sprite titleCard;
@@ -75,71 +75,16 @@ std::vector<std::unique_ptr<Sprite>> bulletList; //used for sprite rendering and
 ///////////////////////////////////
 
 Game::Game() {
+	//Unused for now, will be where config files are stored
 	m_GameDataFolder = SDL_GetPrefPath(ORG_NAME, APP_NAME);
-	SDL_assert(strlen(m_GameDataFolder.c_str()) != 0);
-
-	g_SaveStatesFolder = m_GameDataFolder + SAVE_STATE_FOLDER;
 }
 
 Game::~Game() {}
 
 
-//VERY BAD 
-// TODO: REDO ENTIRE DESIGN OF CONFIG FROM SCRATCH, THIS SUCKS
-//void LoadSettingsFromConfig(map< string, map<string, vector<string> > >& TheSettingsFileMap) {
-//	//Read in initial save data and apply
-//	string filePath = g_SaveStatesFolder + GlobalHelpers::GetOSSeparator() + INITIAL_SAVE_STATE_FILE + ".config";
-//	ifstream tempFile;
-//	tempFile.open(filePath, ios::in);
-//
-//	int lineNum = 0;
-//	if (tempFile.is_open())
-//	{
-//		vector<string> tokensToProcess;
-//		map < string, vector < string > > vectorOfTokensToProcess;
-//		vector<string> fileLines;
-//		int index = 0;
-//		for (string line; getline(tempFile, line, '\n'); ) {
-//			fileLines.push_back(line);
-//			char* token = strtok((char*)line.c_str(), ",");
-//	
-//			string name = token;
-//			if (name.find(SAVE_STATE_PREFIX) != string::npos) {
-//				TheSettingsFileMap.emplace(name, vectorOfTokensToProcess);
-//				lineNum++;
-//				continue;
-//			}
-//
-//			//tokenize each line
-//			while (token != NULL)
-//			{
-//				int i = 1;
-//				string settingHeader;
-//				while (i < 10) {
-//					settingHeader = fileLines.at(lineNum - i);
-//					if (settingHeader.find(SAVE_STATE_PREFIX) != string::npos) {
-//						break;
-//					}
-//					i++;
-//				}
-//				if (name.find(token) == string::npos) {
-//					TheSettingsFileMap[settingHeader][name].push_back(token);
-//				}
-//				token = strtok(NULL, ",");
-//			}
-//
-//			lineNum++;
-//		}
-//	}
-//	else
-//	{
-//		cout << "Could not open settings file" << endl;
-//	}
-//	tempFile.close();
-//}
-
 //Windows does a funny bit where it freezes the main thread when moving a nonfullscreen window around
 //This function is basically a copy of main() and ensures the main thread keeps running. Added at the end of init() as an SDL EventWatch
+//		-not perfect, if you SLOWLY drag the window, it still pauses and then catches up, so idk man
 static int GameLoopEventWatch(void* userdata, SDL_Event* event)
 {
 	if (event->type == SDL_WINDOWEVENT && (event->window.event == SDL_WINDOWEVENT_MOVED || event->window.event == SDL_WINDOWEVENT_RESIZED)) {
@@ -167,81 +112,14 @@ int Game::init(
 )
 {
 
-	//string firstTimeInitFilePath = g_SaveStatesFolder + GlobalHelpers::GetOSSeparator() + FIRST_TIME_INIT_FILENAME + ".init";
-	//bool isFirstTimeInit = !GlobalHelpers::FileExists(firstTimeInitFilePath.c_str());
-
 	//used for asserting files/directories exist
 	struct stat info;
-	/* Create game file directories
-	*
-	*
-	*Directory will be as follows:
-	*	C:\Users\USER\AppData\Roaming\Perpetual Motion Software\Instability\SaveStates
-	*	...
-	*/
-	//cout << "Initializing game data folders..." << endl;
-	//if (_mkdir(g_SaveStatesFolder.c_str()) == 0) {
-	//	cout << "\t>> Created directory \"" << g_SaveStatesFolder << "\"" << endl;
-
-	//	ofstream ftInitFile;
-	//	ftInitFile.open(firstTimeInitFilePath, ios::app);
-	//	ftInitFile << "~First time initialization~\n";
-	//	ftInitFile << "~Deleting this file may break game initialization - only do so if you know what you are doing";
-	//	ftInitFile.close();
-
-	//	cout << "\t>> Created first time initialization file successfully" << endl;
-
-	//}
-	//else if(!isFirstTimeInit) {
-	//	cout << "\t>> Folder \"" << SAVE_STATE_FOLDER << "\" has already been initialized..." << endl;
-
-	//	SDL_assert(stat(firstTimeInitFilePath.c_str(), &info) == 0);
-	//	SDL_assert(info.st_mode & S_IFMT);
-	//	cout << "\t>> First time initialization file already exists and is accessible..." << endl;
-	//}
-	//else
-	//{
-	//	//something happened, failed to create directory
-	//	// IGNORE FOR NOW //
-	//}
-
-	/* Verify game file directories each are:
-	*   1.) a Directory
-	*   2.) Accessible
-	*/
-	//SDL_assert(stat(m_GameDataFolder.c_str(), &info) == 0);
-	//SDL_assert(info.st_mode & S_IFDIR);
-
-	//SDL_assert(stat(g_SaveStatesFolder.c_str(), &info) == 0);
-	//SDL_assert(info.st_mode & S_IFDIR);
 
 	int w = DEFAULT_RESOLUTION_W;
 	int h = DEFAULT_RESOLUTION_H;
+
 	if (SDL_Init(SDL_INIT_EVERYTHING | SDL_INIT_TIMER) == 0) {
 		
-		//if (width == -1 || height == -1) {
-		//	if (isFirstTimeInit || g_SettingsFileMap.empty()) {
-		//		w = DEFAULT_RESOLUTION_W;
-		//		h = DEFAULT_RESOLUTION_H;
-		//	}
-		//	else {
-		//		//Read in settings from file
-		//		for (map< string, map<string, vector<string> > >::iterator iter1 = g_SettingsFileMap.begin(); iter1 != g_SettingsFileMap.end(); iter1++) {
-
-		//			auto& settingName = (*iter1).first;
-		//			if (settingName.find("RES") != string::npos) {
-		//				map<string, vector<string> >::iterator iter2((*iter1).second.begin());
-		//				for (map<string, vector<string> >::iterator iter2 = (*iter1).second.begin(); iter2 != (*iter1).second.end(); iter2++) {
-		//					auto& settingName = (*iter2).first;
-		//					auto& data = (*iter2).second;
-		//					w = stoi(data.at(0));
-		//					h = stoi(data.at(1));
-		//				}
-		//			}
-		//		}
-		//	}
-		//}
-
 		int windowFlags = 0;
 		if (isFullscreen)
 			windowFlags = SDL_WINDOW_FULLSCREEN_DESKTOP;
@@ -279,25 +157,22 @@ int Game::init(
 	TTF_Init();
 
 	//Create Main Menu sprites
-	bg1.Create(m_Renderer, "Assets/menubackground5.png", -1, -1, 0, 0, "BG_BACKGROUND", false);
+	sc_MainMenu = Scene("MainMenu", MENU);
+	bg1.Create(m_Renderer, "Assets/menubackground6.png", -1, -1, 0, 0, "BG_BACKGROUND", false);
 	titleCard.Create(m_Renderer, "Assets/titlecard2.png", -1, -1, RENDER_RESOLUTION_W / 2, RENDER_RESOLUTION_H / 2, "TitleCard", false, true);
 	tempPlayButton.Create(m_Renderer, "Assets/tempplay.png", -1, -1, RENDER_RESOLUTION_W / 2, RENDER_RESOLUTION_H / 2, "BT_PlayButton", true, true, 0, 25);
 	tempQuitButton.Create(m_Renderer, "Assets/tempquit.png", -1, -1, RENDER_RESOLUTION_W / 2, RENDER_RESOLUTION_H / 2, "BT_QuitButton", true, true, 0, 75);
 	tempOptionsButton.Create(m_Renderer, "Assets/tempoptions.png", -1, -1, RENDER_RESOLUTION_W - 75, 25, "BT_OptionsCogwheel",true);
 	sc_MainMenu.AddSpritesToRenderList({ &bg1, &titleCard, &tempPlayButton, &tempQuitButton, &tempOptionsButton });
 	sc_MainMenu.AddClickableSpritesToList({ &bg1, &titleCard, &tempPlayButton, &tempQuitButton, &tempOptionsButton });
-	sc_MainMenu.SetName(SCENE_PREFIX "MainMenu");
+	//sc_MainMenu.SetName(SCENE_PREFIX "MainMenu");
 
 
 	//Create Options Menu Sprites
-	bg2.Create(m_Renderer, "Assets/menubackground5.png", -1, -1, 0, 0, "BG_BACKGROUND2", false);
 	tempOptionsButton2.Create(m_Renderer, "Assets/tempoptions2.png", -1, -1, RENDER_RESOLUTION_W - 75, 25, "BT_ExitOptns", true);
-
-	sc_OptionsMenu.SetName(SCENE_PREFIX "OptionsMenu");
-	sc_OptionsMenu.AddSpriteToRenderList(&tempOptionsButton2);
-	sc_OptionsMenu.AddSpriteToRenderList(&bg2);
+	sc_OptionsMenu = Scene("OptionsMenu", OPTIONS);
+	sc_OptionsMenu.AddSpritesToRenderList({ &tempOptionsButton2, &bg1 });
 	sc_OptionsMenu.AddClickableSpriteToList(&tempOptionsButton2);
-	sc_OptionsMenu.AddClickableSpriteToList(&bg2);
 
 	g_Font = TTF_OpenFont("Assets/Stifly.ttf", 24);
 	screenResolutionOptionsText.Create(m_Renderer, NULL, 300, 50, 0, 0, "TXT_ScreenResolution", false);
@@ -305,18 +180,9 @@ int Game::init(
 	sc_OptionsMenu.AddSpriteToRenderList(&screenResolutionOptionsText);
 	sc_OptionsMenu.AddClickableSpriteToList(&screenResolutionOptionsText);
 
-	//Create Gameplay Sprites
-	sc_GameplayScene.SetName(SCENE_PREFIX "INSTABILITY");
-
+	//Create Gameplay Scene and set it as current
+	sc_GameplayScene = Scene("Gameplay", GAMEPLAY);
 	m_CurrentScene = sc_MainMenu;				
-
-
-	//if (isFirstTimeInit) 
-		//CreateInitialSaveSate();
-	
-	//Load all saved settings into map for runtime usage
-	//LoadSettingsFromConfig(g_SettingsFileMap);
-	//SDL_assert(!g_SettingsFileMap.empty());
 
 	SDL_AddEventWatch(GameLoopEventWatch, this);
 	return 0;
@@ -380,15 +246,14 @@ void Game::ResetGridPosition()
 void Game::GoToNextScene(string theButtonClicked) {
 
 	m_CurrentScene.DisableAllSprites();
-	string currentSceneName = m_CurrentScene.GetName();
+	int currentScene = m_CurrentScene.GetSceneType();
 
 	//MainMenu --> OptionsMenu
 	//    or
 	//MainMenu --> Gameplay
-	if (currentSceneName.find(SCENE_PREFIX "MainMenu") != string::npos){
+	if (currentScene == MENU){
 		if (theButtonClicked.find(BUTTON_PREFIX "OptionsCogwheel") != string::npos) {
 			m_CurrentScene = sc_OptionsMenu;
-			m_CurrentScene.m_SceneEnum = 1;
 		}
 		else if (theButtonClicked.find(BUTTON_PREFIX "PlayButton") != string::npos) {
 			m_CurrentScene = sc_GameplayScene;
@@ -397,15 +262,14 @@ void Game::GoToNextScene(string theButtonClicked) {
 			g_BuyFactoryToggle = false;
 			g_UpgradeToggle = false;
 			UpdateGrid();
-			m_CurrentScene.m_SceneEnum = 2;
 		}
 	}
 	//OptionsMenu --> MainMenu
-	else if (currentSceneName.find(SCENE_PREFIX "OptionsMenu") != string::npos && theButtonClicked.find(BUTTON_PREFIX "ExitOptns") != string::npos) {
+	else if (currentScene == OPTIONS && theButtonClicked.find(BUTTON_PREFIX "ExitOptns") != string::npos) {
 		m_CurrentScene = sc_MainMenu;
-		m_CurrentScene.m_SceneEnum = 0;
 	}
-	else if (currentSceneName.find(SCENE_PREFIX "INSTABILITY") != string::npos && theButtonClicked.find(BUTTON_PREFIX "BackToMenu") != string::npos) {
+	//Gameplay --> MainMenu
+	else if (currentScene == GAMEPLAY && theButtonClicked.find(BUTTON_PREFIX "BackToMenu") != string::npos) {
 		g_Energy = 0;
 		for (int i = 0; i < gridRows; i++) {
 			for (int j = 0; j < gridCols; j++) {
@@ -413,13 +277,7 @@ void Game::GoToNextScene(string theButtonClicked) {
 			}
 		}
 
-		/*for (auto& bullet : bulletList)
-			RemoveSpriteFromRenderingList(bullet.get());
-		bulletList.clear();*/
-
-		m_CurrentScene = sc_MainMenu;
-		m_CurrentScene.m_SceneEnum = 0;
-		
+		m_CurrentScene = sc_MainMenu;		
 	}
 
 	
@@ -484,8 +342,6 @@ vector<int> getHexGridIndex(string str)
 	return foundInds;
 }
 mutex mtx;
-//POSSIBLE MEMORY LEAK HERE
-//MEMORY INCREASING WITH EACH CLICK
 Uint32 hexagon_wiggle_feedback(Uint32 interval, void* param)
 {
 	mtx.lock();
@@ -528,6 +384,7 @@ void Game::ClickOnSprite(SDL_Event& theEvent, const vector<Sprite*> theClickable
 					resourceCounterText.setText(m_Renderer, g_Font, COLOR_WHITE, "ENERGY: ");
 
 					resourceCounterText2.Create(m_Renderer, NULL, 15, 25, RENDER_RESOLUTION_W - 50, 75, "TXT_ResourceCounter2", false);
+					resourceCounterText2.setText(m_Renderer, g_Font, COLOR_RED, "0");
 
 					buyTurretButton.Create(m_Renderer, NULL, 110, 25, RENDER_RESOLUTION_W - 150, 105, "TXT_BuyTurret", true);
 					buyWallButton.Create(m_Renderer, NULL, 85, 25, RENDER_RESOLUTION_W - 150, 135, "TXT_BuyWall", true);
@@ -548,9 +405,6 @@ void Game::ClickOnSprite(SDL_Event& theEvent, const vector<Sprite*> theClickable
 				buyWallButton.setText(m_Renderer, g_Font, COLOR_WHITE, "WALL: " + to_string(WALL_COST));
 				buyFactoryButton.setText(m_Renderer, g_Font, COLOR_WHITE, "FACTORY: " + to_string(FACTORY_COST));
 				upgradeButton.setText(m_Renderer, g_Font, COLOR_WHITE, "UPGRADE");
-
-				
-
 
 				GoToNextScene(currentSpriteName);				
 			}
@@ -822,10 +676,8 @@ void Game::HandleEvents() {
 }
 
 void Game::Update(float deltaTime) {
-	//0 - main menu
-	//1 - options menu
-	//2 - gameplay
-	if (m_CurrentScene.m_SceneEnum == 2) {
+	
+	if (m_CurrentScene.GetSceneType() == GAMEPLAY) {
 		if (g_Energy < 0) {
 			g_Energy = 0;
 		}
@@ -889,13 +741,14 @@ void Game::Update(float deltaTime) {
 		g_EnergyTimer += deltaTime;
 
 	
-		// Move + check off-screen EVERY FRAME
+		// Move bullet 
 		for (auto it = bulletList.begin(); it != bulletList.end(); ) {
 			auto* s = it->get();
 
 			float newY = s->getRect()->y - 400.0f * deltaTime;
 			s->setYPos(static_cast<int>(newY));
 
+			//check off screen (this is happening every frame)
 			if (newY < -25.0f) {
 				//remove from render list + delete from memory
 				RemoveSpriteFromRenderingList(s);    
@@ -1009,75 +862,6 @@ void Game::Render() {
 	SDL_RenderPresent(m_Renderer);
 }
 
-//void Game::Reset() {
-//
-//	//SetCurrentSceneName(SCENE_PREFIX "MainMenu");
-//	m_CurrentScene.DisableAllSprites();
-//	m_CurrentScene = sc_MainMenu;
-//	m_CurrentScene.EnableAllSprites();
-//
-//	vector<Sprite*> menuSprites = sc_MainMenu.GetSpriteList();
-//	map< string, map<string, vector<string> > >::iterator iter1(g_SettingsFileMap.begin());
-//	
-//	//Iterate through the settings map, then populate the sprite data
-//	int iterIndex = 0;
-//	for (map< string, map<string, vector<string> > >::iterator iter1 = g_SettingsFileMap.begin(); iter1 != g_SettingsFileMap.end(); iter1++) {
-//
-//		auto& settingName = (*iter1).first;
-//		if (settingName.find("SPRITE") != string::npos) {
-//
-//			map<string, vector<string> >::iterator iter2((*iter1).second.begin());
-//			for (map<string, vector<string> >::iterator iter2 = (*iter1).second.begin(); iter2 != (*iter1).second.end(); iter2++) {
-//
-//				auto& spriteName = (*iter2).first;
-//				auto& data = (*iter2).second;
-//
-//				menuSprites.at(iterIndex)->setSpriteName(spriteName.c_str());
-//				menuSprites.at(iterIndex)->setPosition(stoi(data.at(0)), stoi(data.at(1)));
-//				menuSprites.at(iterIndex)->setDimenstions(stoi(data.at(2)), stoi(data.at(3)));
-//				menuSprites.at(iterIndex)->setTexture(m_Renderer, data.at(4).c_str());
-//				menuSprites.at(iterIndex)->Enable();
-//				iterIndex++;
-//			}
-//		}
-//	}
-//}
-
-void Game::CreateInitialSaveSate() {
-
-	string fileName = INITIAL_SAVE_STATE_FILE;
-	string filePath = g_SaveStatesFolder + GlobalHelpers::GetOSSeparator() + fileName + ".config";
-	
-	ofstream tempFile;
-	tempFile.open(filePath, ios::out);
-
-	if (tempFile.is_open())
-	{
-		//Screen Resolution
-		tempFile << "SS_RES\n";
-		tempFile << "RESOLUTION," << DEFAULT_RESOLUTION_W << "," << DEFAULT_RESOLUTION_H << ",\n";
-
-		//Main Menu Sprites
-		tempFile << "SS_SPRITES\n";
-		vector<Sprite*> menuSprites = sc_MainMenu.GetSpriteList();
-		for (int i = 0; i < menuSprites.size(); i++)
-		{
-			Sprite currentSprite = *menuSprites.at(i);
-			SDL_Rect spriteRect = *menuSprites.at(i)->getRect();
-			string spriteName = menuSprites.at(i)->getSpriteName();
-
-			tempFile << spriteName << "," << spriteRect.x << "," << spriteRect.y << "," << spriteRect.w << "," << spriteRect.h << "," << currentSprite.getTextureSource() << ",\n";
-		}
-
-		tempFile.close();
-	}
-	else
-	{
-		cout << "Could not open save file for writing";
-	}
-	
-}
-
 void Game::Clean(){
 	SDL_DestroyWindow(m_mainWindow);
 	SDL_DestroyRenderer(m_Renderer);
@@ -1086,4 +870,3 @@ void Game::Clean(){
 	TTF_Quit();
 	cout << "Game shut down successfully" << endl;
 }
-

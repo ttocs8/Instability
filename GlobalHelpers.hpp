@@ -24,6 +24,12 @@
 #define IOS "iOS"
 #define ANDROID "Android"
 #define FPS 60
+enum SceneType {
+	MENU,
+	OPTIONS,
+	GAMEPLAY
+};
+
 
 
 //Sprite / Naming Constants

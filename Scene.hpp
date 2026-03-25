@@ -9,6 +9,7 @@
 class Scene {
 public:
 	Scene();
+	Scene(string sceneName, SceneType currentScene);
 	~Scene();
 	void AddSpriteToRenderList(Sprite* theSprite);
 	void AddSpritesToRenderList(std::vector<Sprite*> theSprites);
@@ -21,14 +22,14 @@ public:
 	void EnableAllSprites();
 	void EnableAllSprites_Except(std::string theNameToFilter);
 	void DisableAllSprites();
+	SceneType GetSceneType();
 
 	std::vector<Sprite*> m_ListOfSpritesToRender;
 	std::vector<Sprite*> m_ListOfClickableSprites;
-	//0 - main menu
-	//1 - options menu
-	//2 - gameplay
-	int m_SceneEnum = 0;
+	
+	
 
 private:
 	std::string m_SceneName = "";
+	int m_SceneType = -1;
 };

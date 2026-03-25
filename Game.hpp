@@ -66,7 +66,7 @@ private:
 	void ResetGridPosition();
 	void GoToNextScene(string theButtonClicked);
 	void SortSpritesForRendering();
-	void DestroyAllSpritesOfName(string spriteName);
+	//void DestroyAllSpritesOfName(string spriteName);
 	void RemoveSpriteFromRenderingList(Sprite* spriteToRemove);
 
 

@@ -1,7 +1,13 @@
 #include "Scene.hpp"
 
-Scene::Scene(){
+
+Scene::Scene() {
 	m_SceneName = "";
+}
+
+Scene::Scene(string sceneName, SceneType currentScene) {
+	m_SceneName = sceneName;
+	m_SceneType = currentScene;
 }
 Scene::~Scene(){}
 
@@ -36,6 +42,11 @@ void Scene::EnableAllSprites_Except(std::string theNameToFilter) {
 void Scene::DisableAllSprites() {
 	for (Sprite* sprite : m_ListOfSpritesToRender)
 		sprite->Disable();
+}
+
+SceneType Scene::GetSceneType()
+{
+	return (SceneType)m_SceneType;
 }
 
 Sprite* Scene::GetSprite(std::string theSpriteName) {
