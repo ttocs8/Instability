@@ -35,8 +35,6 @@ public:
 	void HandleEvents();
 	void Update(float deltaTime);
 	void Render();
-	void Reset();
-	void CreateInitialSaveSate();
 	void Clean();
 
 	bool IsRunning() { return IS_RUNNING_MAIN; };

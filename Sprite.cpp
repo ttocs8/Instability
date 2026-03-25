@@ -2,6 +2,7 @@
 
 Sprite::Sprite()
 {
+	m_Color = COLOR_WHITE;
 	m_Rect = new SDL_Rect();
 }
 
